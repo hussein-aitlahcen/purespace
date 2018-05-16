@@ -1,0 +1,91 @@
+-- purespace.cabal ---
+
+-- Copyright (C) 2018 Hussein Ait-Lahcen
+
+-- Author: Hussein Ait-Lahcen <hussein.aitlahcen@gmail.com>
+
+-- This program is free software; you can redistribute it and/or
+-- modify it under the terms of the GNU General Public License
+-- as published by the Free Software Foundation; either version 3
+-- of the License, or (at your option) any later version.
+
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+
+-- You should have received a copy of the GNU General Public License
+-- along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+name:                purespace
+version:             0.1.0.0
+homepage:            http://github.com/hussein-aitlahcen/purespace
+license:             GPL-3
+license-file:        LICENSE
+author:              Hussein Ait Lahcen
+maintainer:          hussein.aitlahcen@gmail.com
+category:            Game
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+source-repository head
+    type: git
+    location: https://github.com/hussein-aitlahcen/purespace
+
+library
+  exposed-modules:     PureSpace.Common.Prelude
+                     , PureSpace.Common.Monad
+                     , PureSpace.Common.Lens
+                     , PureSpace.Common.Files
+  hs-source-dirs:      common/src/
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+                       -Werror
+  build-depends:       base >=4.10 && <4.11
+                     , lens
+                     , mtl 
+                     , stm
+                     , directory
+
+executable purespace-client
+  main-is:             Main.hs
+  other-modules:       PureSpace.Client.Assets
+                     , PureSpace.Client.GameWindow
+                     , PureSpace.Client.Shaders
+                     , PureSpace.Client.Sprites
+  hs-source-dirs:      client/src/
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  build-depends:       purespace
+                     , base >=4.10 && <4.11
+                     , OpenGLRaw
+                     , OpenGL
+                     , GLUT
+                     , GLUtil
+                     , JuicyPixels
+                     , aeson
+                     , vector
+                     , bytestring
+
+test-suite purespace-client-test
+  type:                exitcode-stdio-1.0
+  main-is:             Spec.hs
+  hs-source-dirs:      client/test/
+  default-language:    Haskell2010
+  build-depends:       base >=4.10 && <4.11
+
+executable purespace-server
+  main-is:             Main.hs
+  hs-source-dirs:      server/src/
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  build-depends:       purespace
+                     , base >=4.10 && <4.11
+  
+test-suite purespace-server-test
+  type:                exitcode-stdio-1.0
+  main-is:             Spec.hs
+  hs-source-dirs:      client/test/
+  default-language:    Haskell2010
+  build-depends:       base >=4.10 && <4.11
