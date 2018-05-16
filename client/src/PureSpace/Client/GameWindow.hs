@@ -46,16 +46,6 @@ data AppError = AppAssetError AssetError
 newtype App a = App (ExceptT AppError (ReaderT AppConfig (StateT AppState IO)) a)
     deriving (Functor, Applicative, Monad, MonadReader AppConfig, MonadIO, MonadState AppState)
 
-runApp :: IO ()
-runApp = do
-  result <- evalStateT (runReaderT (runExceptT createGameWindow) appConfig) appState
-  case result of
-    Left message -> print (message :: AppError)
-    Right _      -> putStrLn "Unseen string"
-  where
-    appState  = AppState ()
-    appConfig = AppConfig ()
-
 class AsAppError s where
   appError :: Prism' s AppError
 
@@ -77,6 +67,16 @@ instance AsShaderError AppError where
           AppShaderError x -> Right x
           y                -> Left y
     in prism f g
+
+runApp :: IO ()
+runApp = do
+  result <- evalStateT (runReaderT (runExceptT createGameWindow) appConfig) appState
+  case result of
+    Left message -> print (message :: AppError)
+    Right _      -> putStrLn "Unseen string"
+  where
+    appState  = AppState ()
+    appConfig = AppConfig ()
 
 {-
 ############################
