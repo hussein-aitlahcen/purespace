@@ -30,6 +30,7 @@ import           Data.List
 import           Data.Vector.Storable
 import           Graphics.UI.GLUT
 import           PureSpace.Client.Game
+import           PureSpace.Client.ShaderProgram
 import           PureSpace.Client.Sprites
 import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
@@ -52,11 +53,11 @@ Everything under this line is complete garbage atm
 
 data DrawableSprite = DrawableSprite Sprite GLfloat GLfloat GLfloat GLfloat deriving Show
 
-createGameWindow :: (MonadIO m, MonadError e m, AsAssetError e) => m ()
+createGameWindow :: (MonadIO m, MonadError e m, AsAssetError e, AsShaderError e, AsShaderProgramError e) => m ()
 createGameWindow = do
-  atlas <- loadAtlas
-  (_, _) <- getArgsAndInitialize
-  window  <- createWindow "PureSpace"
+  atlas          <- loadAtlas
+  (_, _)         <- getArgsAndInitialize
+  window         <- createWindow "PureSpace"
   (text, sprite) <- initContext atlas
   liftIO $ print sprite
   displayCallback $= display text sprite
@@ -77,9 +78,10 @@ reshape s@(Size width height) = do
     visibleArea = 600
     aspectRatio = fromIntegral width / fromIntegral height
 
-initContext :: (MonadIO m) => SpriteAtlas -> m (TextureObject, DrawableSprite)
+initContext :: (MonadIO m, MonadError e m, AsShaderError e, AsShaderProgramError e) => SpriteAtlas -> m (TextureObject, DrawableSprite)
 initContext (SpriteAtlas image sprites) = do
   liftIO $ putStrLn "initialize"
+  shaderProgram <- loadGameShaderProgram
   initialDisplayMode          $= [DoubleBuffered]
   blend                       $= Enabled
   sampleAlphaToOne            $= Enabled
@@ -102,6 +104,7 @@ initContext (SpriteAtlas image sprites) = do
       (TextureSize2D (fromIntegral width) (fromIntegral height))
       0
       (PixelData RGBA UnsignedByte ptr)
+  liftIO $ generateMipmap' Texture2D
   let (Just s@(Sprite _ x y w h)) = Data.List.find (\(Sprite name _ _ _ _) -> name == "playerShip1_blue.png") sprites
   pure (texObject, DrawableSprite s (fromIntegral x/fromIntegral width) (fromIntegral y/fromIntegral height) (fromIntegral w/fromIntegral width) (fromIntegral h/fromIntegral height))
 

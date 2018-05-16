@@ -33,8 +33,8 @@ module PureSpace.Client.Assets
 import           Data.Aeson               (FromJSON, eitherDecode)
 import qualified Data.ByteString.Lazy     as BS
 import           PureSpace.Common.Prelude
-import           PureSpace.Common.Lens
-import           PureSpace.Common.Files
+import           PureSpace.Common.Lens (Prism', MonadIO, MonadError, prism, liftIO, throwing)
+import           PureSpace.Common.Files (doesFileExist)
 
 data AssetError = AssetNotFound       String
                 | AssetDecodingFailed String

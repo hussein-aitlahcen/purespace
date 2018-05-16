@@ -51,7 +51,8 @@ library
 executable purespace-client
   main-is:             Main.hs
   other-modules:       PureSpace.Client.Assets
-                     , PureSpace.Client.Shaders
+                     , PureSpace.Client.Shader
+                     , PureSpace.Client.ShaderProgram
                      , PureSpace.Client.Sprites
                      , PureSpace.Client.Game
                      , PureSpace.Client.GameError

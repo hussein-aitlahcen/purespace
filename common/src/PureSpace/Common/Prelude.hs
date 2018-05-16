@@ -22,9 +22,11 @@ module PureSpace.Common.Prelude
     module Data.Semigroup,
     safeHead,
     bool,
+    traverse_
   )
   where
 
+import           Data.Foldable  (traverse_)
 import           Data.Semigroup
 
 safeHead :: [a] -> Maybe a

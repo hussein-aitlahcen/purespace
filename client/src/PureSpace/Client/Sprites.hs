@@ -34,7 +34,7 @@ import           Data.Aeson              (FromJSON, parseJSON, withObject, (.:))
 import           Data.Semigroup          ((<>))
 import           PureSpace.Client.Assets (AsAssetError (..), AssetError (..),
                                           loadAssetJSON, spritesPath)
-import           PureSpace.Common.Lens
+import           PureSpace.Common.Monad  (MonadError, MonadIO)
 
 data Sprite = Sprite String Int Int Int Int deriving Show
 

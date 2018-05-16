@@ -22,20 +22,24 @@
 module PureSpace.Client.GameError
   (
     GameError (..),
-    AssetError (..),
-    ShaderError (..),
     AsGameError (..),
+    AssetError (..),
     AsAssetError (..),
-    AsShaderError (..)
+    ShaderError (..),
+    AsShaderError (..),
+    ShaderProgramError (..),
+    AsShaderProgramError (..)
   )
   where
 
 import           PureSpace.Client.Assets
-import           PureSpace.Client.Shaders
+import           PureSpace.Client.Shader
+import           PureSpace.Client.ShaderProgram
 import           PureSpace.Common.Lens
 
 data GameError = GameAssetError  AssetError
                | GameShaderError ShaderError
+               | GameShaderProgramError ShaderProgramError
                deriving Show
 
 class AsGameError s where
@@ -49,7 +53,7 @@ instance AsAssetError GameError where
     let f = GameAssetError
         g = \case
           GameAssetError x -> Right x
-          y                -> Left y
+          x                -> Left  x
     in prism f g
 
 instance AsShaderError GameError where
@@ -57,6 +61,13 @@ instance AsShaderError GameError where
     let f = GameShaderError
         g = \case
           GameShaderError x -> Right x
-          y                 -> Left y
+          x                 -> Left  x
     in prism f g
 
+instance AsShaderProgramError GameError where
+   shaderProgramError =
+     let f = GameShaderProgramError
+         g = \case
+           GameShaderProgramError x -> Right x
+           x                        -> Left  x
+     in prism f g
