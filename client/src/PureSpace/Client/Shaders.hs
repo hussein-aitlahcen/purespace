@@ -122,7 +122,7 @@ createAndCompileShader st src = do
     (pure shader)
     (let releaseShader   = deleteObjectName shader
          loadFailureLogs = liftIO (shaderInfoLog shader)
-     in releaseShader >> loadFailureLogs >>= throwing shaderCompilationFailed . (,) st)
+     in releaseShader *> loadFailureLogs >>= throwing shaderCompilationFailed . (,) st)
 
 loadGameShaders :: (MonadIO m, MonadError e m, AsShaderError e) => [ShaderType] -> m GameShaders
 loadGameShaders shaderTypes = do

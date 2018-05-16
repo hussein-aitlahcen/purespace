@@ -17,9 +17,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module PureSpace.Client.GameWindow
   (
@@ -31,52 +29,20 @@ import           Codec.Picture
 import           Data.List
 import           Data.Vector.Storable
 import           Graphics.UI.GLUT
-import           PureSpace.Client.Shaders
+import           PureSpace.Client.Game
 import           PureSpace.Client.Sprites
 import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
-
-data AppConfig = AppConfig () deriving Show
-data AppState = AppState () deriving Show
-data AppError = AppAssetError AssetError
-              | AppShaderError ShaderError
-              deriving Show
-
-newtype App a = App (ExceptT AppError (ReaderT AppConfig (StateT AppState IO)) a)
-    deriving (Functor, Applicative, Monad, MonadReader AppConfig, MonadIO, MonadState AppState)
-
-class AsAppError s where
-  appError :: Prism' s AppError
-
-instance AsAppError AppError where
-  appError = id
-
-instance AsAssetError AppError where
-  assetError =
-    let f = AppAssetError
-        g = \case
-          AppAssetError x -> Right x
-          y               -> Left y
-    in prism f g
-
-instance AsShaderError AppError where
-  shaderError =
-    let f = AppShaderError
-        g = \case
-          AppShaderError x -> Right x
-          y                -> Left y
-    in prism f g
-
 runApp :: IO ()
 runApp = do
-  result <- evalStateT (runReaderT (runExceptT createGameWindow) appConfig) appState
+  result <- runGame (GameApp createGameWindow) appConfig appState
   case result of
-    Left message -> print (message :: AppError)
+    Left message -> print (message :: GameError)
     Right _      -> putStrLn "Unseen string"
   where
-    appState  = AppState ()
-    appConfig = AppConfig ()
+    appState  = GameState
+    appConfig = GameConfig
 
 {-
 ############################
@@ -86,7 +52,7 @@ Everything under this line is complete garbage atm
 
 data DrawableSprite = DrawableSprite Sprite GLfloat GLfloat GLfloat GLfloat deriving Show
 
-createGameWindow :: (MonadIO m, MonadError e m, AsAppError e, AsAssetError e, AsShaderError e) => m ()
+createGameWindow :: (MonadIO m, MonadError e m, AsAssetError e) => m ()
 createGameWindow = do
   atlas <- loadAtlas
   (_, _) <- getArgsAndInitialize
@@ -111,7 +77,7 @@ reshape s@(Size width height) = do
     visibleArea = 600
     aspectRatio = fromIntegral width / fromIntegral height
 
-initContext :: (MonadIO m, MonadError e m, AsAppError e, AsAssetError e, AsShaderError e) => SpriteAtlas -> m (TextureObject, DrawableSprite)
+initContext :: (MonadIO m) => SpriteAtlas -> m (TextureObject, DrawableSprite)
 initContext (SpriteAtlas image sprites) = do
   liftIO $ putStrLn "initialize"
   initialDisplayMode          $= [DoubleBuffered]
@@ -149,7 +115,7 @@ display text sprite = do
       py = (fromIntegral time / 1000) * 30
       texCoord2f = texCoord :: TexCoord2 GLfloat -> IO ()
       vertex3f = vertex :: Vertex3 GLfloat -> IO ()
-      renderSprite (DrawableSprite (Sprite _ ox oy ow oh) x y w h) p =
+      renderSprite (DrawableSprite (Sprite _ _ _ ow oh) x y w h) p =
         renderPrimitive Quads $ do
           texCoord2f (TexCoord2 x y)
           vertex3f (Vertex3 (-fromIntegral ow/2) (fromIntegral oh/2 + p) 0)
