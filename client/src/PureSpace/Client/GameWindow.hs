@@ -17,7 +17,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module PureSpace.Client.GameWindow
   (
@@ -27,13 +29,15 @@ module PureSpace.Client.GameWindow
 
 import           Codec.Picture
 import           Data.List
-import           Data.Vector.Storable
-import           Graphics.UI.GLUT
+import           Data.Vector.Storable           (fromList, unsafeWith)
+import           Foreign.Storable               (Storable (..), sizeOf)
+import qualified Graphics.GLUtil                as U
+import           Graphics.UI.GLUT               as GLUT
+import qualified Linear                         as L
 import           PureSpace.Client.Game
 import           PureSpace.Client.ShaderProgram
 import           PureSpace.Client.Sprites
 import           PureSpace.Common.Lens
-import           PureSpace.Common.Prelude
 
 runApp :: IO ()
 runApp = do
@@ -44,41 +48,27 @@ runApp = do
   where
     appState  = GameState
     appConfig = GameConfig
-
 {-
 ############################
 Everything under this line is complete garbage atm
 ############################
 -}
 
-data DrawableSprite = DrawableSprite Sprite GLfloat GLfloat GLfloat GLfloat deriving Show
+data DrawableSprite = DrawableSprite Sprite (BufferObject, VertexArrayObject) deriving Show
 
 createGameWindow :: (MonadIO m, MonadError e m, AsAssetError e, AsShaderError e, AsShaderProgramError e) => m ()
 createGameWindow = do
+  initialContextVersion $= (3, 3)
   atlas          <- loadAtlas
   (_, _)         <- getArgsAndInitialize
   window         <- createWindow "PureSpace"
-  (text, sprite) <- initContext atlas
+  (text, sprite, program) <- initContext atlas
   liftIO $ print sprite
-  displayCallback $= display text sprite
-  reshapeCallback $= Just reshape
+  displayCallback $= display program text sprite
   idleCallback    $= Just (postRedisplay (Just window))
   mainLoop
 
-reshape :: ReshapeCallback
-reshape s@(Size width height) = do
-  putStrLn "reshaped"
-  viewport   $= (Position 0 0, s)
-  matrixMode $= Projection
-  loadIdentity
-  bool (width > height)
-    (ortho2D (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea)
-    (ortho2D (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio))
-  where
-    visibleArea = 600
-    aspectRatio = fromIntegral width / fromIntegral height
-
-initContext :: (MonadIO m, MonadError e m, AsShaderError e, AsShaderProgramError e) => SpriteAtlas -> m (TextureObject, DrawableSprite)
+initContext :: (MonadIO m, MonadError e m, AsShaderError e, AsShaderProgramError e) => SpriteAtlas -> m (TextureObject, DrawableSprite, Program)
 initContext (SpriteAtlas image sprites) = do
   liftIO $ putStrLn "initialize"
   shaderProgram <- loadGameShaderProgram
@@ -88,7 +78,6 @@ initContext (SpriteAtlas image sprites) = do
   sampleAlphaToCoverage       $= Enabled
   depthBounds                 $= Nothing
   depthFunc                   $= Nothing
-  texture Texture2D           $= Enabled
   texObject <- genObjectName
   textureBinding  Texture2D   $= Just texObject
   textureWrapMode Texture2D S $= (Mirrored, ClampToBorder)
@@ -105,29 +94,64 @@ initContext (SpriteAtlas image sprites) = do
       0
       (PixelData RGBA UnsignedByte ptr)
   liftIO $ generateMipmap' Texture2D
-  let (Just s@(Sprite _ x y w h)) = Data.List.find (\(Sprite name _ _ _ _) -> name == "playerShip1_blue.png") sprites
-  pure (texObject, DrawableSprite s (fromIntegral x/fromIntegral width) (fromIntegral y/fromIntegral height) (fromIntegral w/fromIntegral width) (fromIntegral h/fromIntegral height))
+  let (Just s@(Sprite _ x y w h)) = Data.List.find (\(Sprite name _ _ _ _) -> name == "playerShip2_blue.png") sprites
+  vbo <- createVBO $ spriteVertices (normalizeUV x width) (normalizeUV y height) (normalizeUV w width) (normalizeUV h height)
+  pure (texObject, DrawableSprite s vbo, shaderProgram)
+  where
+    normalizeUV a b = fromIntegral a / fromIntegral b
 
-display :: TextureObject -> DrawableSprite -> DisplayCallback
-display text sprite = do
+spriteVertices ::GLfloat -> GLfloat -> GLfloat -> GLfloat -> [GLfloat]
+spriteVertices x y w h =
+      [
+        -w/2,  h/2, x, y,
+         w/2,  h/2, x + w, y,
+         w/2, -h/2, x + w, y + h,
+
+        -w/2,  h/2, x, y,
+         w/2, -h/2, x + w, y + h,
+        -w/2, -h/2, x, y + h
+      ]
+
+createVBO :: MonadIO m => [GLfloat] -> m (BufferObject, VertexArrayObject)
+createVBO vertices = do
+  vertexArray  <- genObjectName
+  vertexBuffer <- genObjectName
+  bindBuffer ArrayBuffer $= Just vertexBuffer
+  let vector = fromList vertices
+  liftIO $ unsafeWith vector $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize, ptr, StaticDraw)
+  bindVertexArrayObject                  $= Just vertexArray
+  vertexAttribArray   (AttribLocation 0) $= Enabled
+  vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 4 Float 0 U.offset0)
+  bindBuffer ArrayBuffer                 $= Nothing
+  bindVertexArrayObject                  $= Nothing
+  pure (vertexBuffer, vertexArray)
+  where
+    bufferSize = toEnum $ length vertices * sizeOf (head vertices)
+
+-- Almost fully stateless rendering
+display :: Program -> TextureObject -> DrawableSprite -> DisplayCallback
+display program text (DrawableSprite _ (_, vao)) = do
+  Size width height <- GLUT.get windowSize
   clear [ColorBuffer, DepthBuffer]
-  texture        Texture2D $= Enabled
+  currentProgram           $= Just program
   textureBinding Texture2D $= Just text
-  time <- elapsedTime
-  let
-      py = (fromIntegral time / 1000) * 30
-      texCoord2f = texCoord :: TexCoord2 GLfloat -> IO ()
-      vertex3f = vertex :: Vertex3 GLfloat -> IO ()
-      renderSprite (DrawableSprite (Sprite _ _ _ ow oh) x y w h) p =
-        renderPrimitive Quads $ do
-          texCoord2f (TexCoord2 x y)
-          vertex3f (Vertex3 (-fromIntegral ow/2) (fromIntegral oh/2 + p) 0)
-          texCoord2f (TexCoord2 (x + w) y)
-          vertex3f (Vertex3 (fromIntegral ow/2) (fromIntegral oh/2 + p) 0)
-          texCoord2f (TexCoord2 (x + w) (y + h))
-          vertex3f (Vertex3 (fromIntegral ow/2) (-fromIntegral oh/2 + p) 0)
-          texCoord2f (TexCoord2 x (y + h))
-          vertex3f (Vertex3 (-fromIntegral ow/2) (-fromIntegral oh/2 + p) 0)
-  renderSprite sprite py
-  texture Texture2D           $= Disabled
+  uniformMatrix (projectionMatrix width height)       "mProjection"
+  uniformMatrix (identity & L.translation %~ (+ 0.3)) "mModelView"
+  bindVertexArrayObject $= Just vao
+  drawArrays Triangles 0 6
+  bindVertexArrayObject $= Nothing
+  currentProgram        $= Nothing
   swapBuffers
+  where
+    identity = L.identity :: L.M44 GLfloat
+
+    uniformMatrix mat n = GLUT.get $ uniformLocation program n >>= U.asUniform mat
+
+    projectionMatrix :: Integral a => a -> a -> L.M44 GLfloat
+    projectionMatrix w h
+      | w > h     = L.ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               (-1) 1
+      | otherwise = L.ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) (-1) 1
+      where
+        visibleArea = 1
+        aspectRatio = fromIntegral w / fromIntegral h

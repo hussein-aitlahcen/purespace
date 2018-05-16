@@ -75,6 +75,7 @@ loadGameShaderProgram = do
   program <- liftIO createProgram
   traverse_ (liftIO . attachShader program) shaders
   liftIO $ linkProgram program
+  traverse_ deleteObjectName shaders
   liftIO $ validateProgram program
   isValid <- liftIO $ validateStatus program
   bool isValid

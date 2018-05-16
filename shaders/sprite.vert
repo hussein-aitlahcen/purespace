@@ -1,11 +1,14 @@
-varying vec2 vTextureCoords;
+#version 330 core
+
+layout (location = 0) in vec4 vertex;
+
+out vec2 vTextureCoords;
  
-uniform mat4 projection;
-uniform vec2 position;
-uniform vec2 textureCoords;
+uniform mat4 mProjection;
+uniform mat4 mModelView;
 
 void main()
 {
-    vTextureCoords = textureCoords;
-    gl_Position = projection * vec4(position, 0.0, 1.0);
+    gl_Position = mProjection * mModelView * vec4(vertex.xy, 0.0, 1.0);
+    vTextureCoords = vertex.zw;
 }
