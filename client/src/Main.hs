@@ -23,9 +23,7 @@ import           PureSpace.Client.Game
 
 main :: IO ()
 main = do
-  result <- runGame appConfig
+  result <- runGame
   case result of
     Left message -> print (message :: GameError)
     Right _      -> putStrLn "Unseen string"
-  where
-    appConfig = GameConfig

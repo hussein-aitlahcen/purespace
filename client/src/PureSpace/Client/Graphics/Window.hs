@@ -31,9 +31,6 @@ import           Graphics.UI.GLUT                                 as GLUT hiding
                                                                            uniform)
 import           PureSpace.Client.Assets.Sprites
 import           PureSpace.Client.Graphics
-import           PureSpace.Client.Graphics.Buffer
-import           PureSpace.Client.Graphics.Shader.Program.Uniform
-import           PureSpace.Client.Graphics.Texture
 import           PureSpace.Common.Monad
 import           PureSpace.Common.Prelude
 {-

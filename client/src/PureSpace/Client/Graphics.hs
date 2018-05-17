@@ -23,12 +23,18 @@ module PureSpace.Client.Graphics
     module PureSpace.Client.Graphics.Shader,
     module PureSpace.Client.Graphics.Shader.Program,
     module PureSpace.Client.Graphics.Error,
-    module PureSpace.Client.Graphics.State
+    module PureSpace.Client.Graphics.State,
+    module PureSpace.Client.Graphics.Buffer,
+    module PureSpace.Client.Graphics.Texture,
+    module PureSpace.Client.Graphics.Shader.Program.Uniform
   )
   where
 
+import           PureSpace.Client.Graphics.Buffer
 import           PureSpace.Client.Graphics.Error
 import           PureSpace.Client.Graphics.Matrix
 import           PureSpace.Client.Graphics.Shader
-import           PureSpace.Client.Graphics.State
 import           PureSpace.Client.Graphics.Shader.Program
+import           PureSpace.Client.Graphics.Shader.Program.Uniform
+import           PureSpace.Client.Graphics.State
+import           PureSpace.Client.Graphics.Texture

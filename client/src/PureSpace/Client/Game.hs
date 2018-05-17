@@ -32,7 +32,9 @@ module PureSpace.Client.Game
 import           PureSpace.Client.Game.Config     (GameConfig (..))
 import           PureSpace.Client.Game.Error      (GameError (..))
 import           PureSpace.Client.Game.State      (GameState (..))
-import           PureSpace.Client.Graphics
+import           PureSpace.Client.Graphics.State  (GraphicsState (..),
+                                                   ShaderProgramState (..),
+                                                   ShaderState (..))
 import           PureSpace.Client.Graphics.Window (createGameWindow)
 import           PureSpace.Common.Lens            (ExceptT, MonadIO,
                                                    MonadReader, MonadState,
@@ -42,10 +44,13 @@ import           PureSpace.Common.Lens            (ExceptT, MonadIO,
 newtype GameApp a = GameApp { unGame :: ExceptT GameError (ReaderT GameConfig (StateT GameState IO)) a }
     deriving (Functor, Applicative, Monad, MonadReader GameConfig, MonadIO, MonadState GameState)
 
-entryPoint :: GameApp ()
-entryPoint = GameApp createGameWindow
-
-runGame :: GameConfig -> IO (Either GameError ())
-runGame config = evalStateT (runReaderT (runExceptT $ unGame entryPoint) config) initialState
+runGame :: IO (Either GameError ())
+runGame = evalStateT (runReaderT (runExceptT go) config) state
   where
-    initialState  = GameState (GraphicsState (ShaderProgramState Nothing) (ShaderState []))
+    config = GameConfig
+    state  = GameState (GraphicsState (ShaderProgramState Nothing) (ShaderState []))
+    go = do
+      createGameWindow
+      pure ()
+
+
