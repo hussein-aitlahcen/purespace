@@ -1,4 +1,4 @@
--- GameConfig.hs ---
+-- GameState.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,10 +17,28 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.GameConfig
+module PureSpace.Client.Game.State
   (
-    GameConfig (..)
+    GameState (..),
+    GraphicsState (..),
+    ShaderProgramState (..),
+    ShaderState (..)
   )
   where
 
-data GameConfig = GameConfig deriving Show
+import           PureSpace.Client.Graphics.State
+import           PureSpace.Common.Lens
+
+newtype GameState = GameState GraphicsState deriving Show
+
+instance HasGraphicsState GameState where
+  graphicsState =
+    let f (GameState x)   = x
+        g (GameState _) x = GameState x
+    in lens f g
+
+instance HasShaderState GameState where
+  shaderState = graphicsState . shaderState
+
+instance HasShaderProgramState GameState where
+  shaderProgramState = graphicsState . shaderProgramState

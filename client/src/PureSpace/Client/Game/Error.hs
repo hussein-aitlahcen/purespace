@@ -19,10 +19,12 @@
 
 {-# LANGUAGE LambdaCase #-}
 
-module PureSpace.Client.GameError
+module PureSpace.Client.Game.Error
   (
     GameError (..),
     AsGameError (..),
+    GraphicsError (..),
+    AsGraphicsError (..),
     AssetError (..),
     AsAssetError (..),
     ShaderError (..),
@@ -32,14 +34,18 @@ module PureSpace.Client.GameError
   )
   where
 
-import           PureSpace.Client.Assets
-import           PureSpace.Client.Shader
-import           PureSpace.Client.ShaderProgram
+import           PureSpace.Client.Assets         (AsAssetError (..),
+                                                  AssetError (..))
+import           PureSpace.Client.Graphics.Error (AsGraphicsError (..),
+                                                  AsShaderError (..),
+                                                  AsShaderProgramError (..),
+                                                  GraphicsError (..),
+                                                  ShaderError (..),
+                                                  ShaderProgramError (..))
 import           PureSpace.Common.Lens
 
-data GameError = GameAssetError  AssetError
-               | GameShaderError ShaderError
-               | GameShaderProgramError ShaderProgramError
+data GameError = GameAssetError    AssetError
+               | GameGraphicsError GraphicsError
                deriving Show
 
 class AsGameError s where
@@ -56,18 +62,16 @@ instance AsAssetError GameError where
           x                -> Left  x
     in prism f g
 
-instance AsShaderError GameError where
-  shaderError =
-    let f = GameShaderError
+instance AsGraphicsError GameError where
+  graphicsError =
+    let f = GameGraphicsError
         g = \case
-          GameShaderError x -> Right x
-          x                 -> Left  x
+          GameGraphicsError x -> Right x
+          x                   -> Left  x
     in prism f g
 
+instance AsShaderError GameError where
+  shaderError = graphicsError . shaderError
+
 instance AsShaderProgramError GameError where
-   shaderProgramError =
-     let f = GameShaderProgramError
-         g = \case
-           GameShaderProgramError x -> Right x
-           x                        -> Left  x
-     in prism f g
+  shaderProgramError = graphicsError . shaderProgramError

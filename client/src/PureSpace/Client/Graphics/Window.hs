@@ -21,7 +21,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 
-module PureSpace.Client.GameWindow
+module PureSpace.Client.Graphics.Window
   (
     runApp
   )
@@ -29,16 +29,22 @@ module PureSpace.Client.GameWindow
 
 import           Codec.Picture
 import           Data.List
-import           Data.Vector.Storable           (fromList, unsafeWith)
-import           Foreign.Storable               (Storable (..), sizeOf)
-import qualified Graphics.GLUtil                as U
-import           Graphics.UI.GLUT               as GLUT hiding (ortho2D)
-import qualified Linear                         as L
+import           Data.Vector.Storable                                (fromList,
+                                                                      unsafeWith)
+import           Foreign.Storable                                    (Storable (..),
+                                                                      sizeOf)
+import qualified Graphics.GLUtil                                     as U
+import           Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects (Program (..))
+import           Graphics.UI.GLUT                                    as GLUT hiding
+                                                                              (ortho2D,
+                                                                              uniform)
+import qualified Linear                                              as L
+import           PureSpace.Client.Assets.Sprites
 import           PureSpace.Client.Game
-import           PureSpace.Client.Matrix
-import           PureSpace.Client.ShaderProgram
-import           PureSpace.Client.Sprites
+import           PureSpace.Client.Graphics
+import           PureSpace.Client.Graphics.Uniform
 import           PureSpace.Common.Lens
+import           PureSpace.Common.Prelude
 
 runApp :: IO ()
 runApp = do
@@ -47,7 +53,7 @@ runApp = do
     Left message -> print (message :: GameError)
     Right _      -> putStrLn "Unseen string"
   where
-    appState  = GameState
+    appState  = GameState (GraphicsState (ShaderProgramState Nothing) (ShaderState []))
     appConfig = GameConfig
 {-
 ############################
@@ -57,22 +63,41 @@ Everything under this line is complete garbage atm
 
 data DrawableSprite = DrawableSprite Sprite (BufferObject, VertexArrayObject) deriving Show
 
-createGameWindow :: (MonadIO m, MonadError e m, AsAssetError e, AsShaderError e, AsShaderProgramError e) => m ()
+openGLVersion :: (Int, Int)
+openGLVersion = (3, 3)
+
+createGameWindow :: (MonadIO m,
+                     MonadState s m,
+                     MonadError e m,
+                     HasShaderState s,
+                     HasShaderProgramState s,
+                     AsAssetError e,
+                     AsShaderError e,
+                     AsShaderProgramError e)
+                 => m ()
 createGameWindow = do
-  initialContextVersion $= (3, 3)
-  atlas          <- loadAtlas
-  (_, _)         <- getArgsAndInitialize
-  window         <- createWindow "PureSpace"
+  initialContextVersion $= openGLVersion
+  atlas                   <- loadAtlas
+  (_, _)                  <- getArgsAndInitialize
+  window                  <- createWindow "PureSpace"
   (text, sprite, program) <- initContext atlas
   liftIO $ print sprite
   displayCallback $= display program text sprite
   idleCallback    $= Just (postRedisplay (Just window))
   mainLoop
 
-initContext :: (MonadIO m, MonadError e m, AsShaderError e, AsShaderProgramError e) => SpriteAtlas -> m (TextureObject, DrawableSprite, Program)
+initContext :: (MonadIO m,
+                MonadState s m,
+                MonadError e m,
+                HasShaderState s,
+                HasShaderProgramState s,
+                AsShaderError e,
+                AsShaderProgramError e)
+            => SpriteAtlas
+            -> m (TextureObject, DrawableSprite, Program)
 initContext (SpriteAtlas image sprites) = do
   liftIO $ putStrLn "initialize"
-  shaderProgram <- loadGameShaderProgram
+  program <- loadGameShaderProgram [(VertexShader, shadersPath <> "/sprite.vert"), (FragmentShader, shadersPath <> "/sprite.frag")]
   initialDisplayMode          $= [DoubleBuffered]
   blend                       $= Enabled
   sampleAlphaToOne            $= Enabled
@@ -97,7 +122,7 @@ initContext (SpriteAtlas image sprites) = do
   liftIO $ generateMipmap' Texture2D
   let (Just s@(Sprite _ x y w h)) = Data.List.find (\(Sprite name _ _ _ _) -> name == "playerShip1_blue.png") sprites
   vbo <- createVBO $ spriteVertices (normalizeUV x width) (normalizeUV y height) (normalizeUV w width) (normalizeUV h height)
-  pure (texObject, DrawableSprite s vbo, shaderProgram)
+  pure (texObject, DrawableSprite s vbo, program)
   where
     normalizeUV a b = fromIntegral a / fromIntegral b
 
@@ -137,12 +162,10 @@ display program text (DrawableSprite _ (_, vao)) = do
   clear [ColorBuffer, DepthBuffer]
   currentProgram           $= Just program
   textureBinding Texture2D $= Just text
-  uniformMatrix (ortho2D 1 width height)              "mProjection"
-  uniformMatrix (identity & L.translation %~ (+ 0.3)) "mModelView"
+  uniform program (ortho2D 1 width height)              "mProjection"
+  uniform program (identity & L.translation %~ (+ 0.3)) "mModelView"
   bindVertexArrayObject $= Just vao
   drawArrays Triangles 0 6
   bindVertexArrayObject $= Nothing
   currentProgram        $= Nothing
   swapBuffers
-  where
-    uniformMatrix mat n = GLUT.get $ uniformLocation program n >>= U.asUniform mat

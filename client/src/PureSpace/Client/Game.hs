@@ -30,13 +30,13 @@ module PureSpace.Client.Game
   )
   where
 
-import           PureSpace.Client.GameConfig (GameConfig (..))
-import           PureSpace.Client.GameError  (GameError (..))
-import           PureSpace.Client.GameState  (GameState (..))
-import           PureSpace.Common.Lens       (ExceptT, MonadIO, MonadReader,
-                                              MonadState, ReaderT, StateT,
-                                              evalStateT, runExceptT,
-                                              runReaderT)
+import           PureSpace.Client.Game.Config (GameConfig (..))
+import           PureSpace.Client.Game.Error  (GameError (..))
+import           PureSpace.Client.Game.State  (GameState (..))
+import           PureSpace.Common.Lens        (ExceptT, MonadIO, MonadReader,
+                                               MonadState, ReaderT, StateT,
+                                               evalStateT, runExceptT,
+                                               runReaderT)
 
 newtype GameApp a = GameApp (ExceptT GameError (ReaderT GameConfig (StateT GameState IO)) a)
     deriving (Functor, Applicative, Monad, MonadReader GameConfig, MonadIO, MonadState GameState)

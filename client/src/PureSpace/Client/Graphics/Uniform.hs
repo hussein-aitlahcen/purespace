@@ -1,4 +1,4 @@
--- Main.hs ---
+-- Uniform.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,9 +17,15 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module Main where
+module PureSpace.Client.Graphics.Uniform
+  (
+    uniform
+  )
+  where
 
-import           PureSpace.Client.Graphics.Window (runApp)
+import qualified Graphics.GLUtil        as U
+import qualified Graphics.UI.GLUT       as GLUT
+import           PureSpace.Common.Monad
 
-main :: IO ()
-main = runApp
+uniform :: (MonadIO m, U.AsUniform t) => GLUT.Program -> t -> String -> m ()
+uniform program matrix variable = GLUT.get $ GLUT.uniformLocation program variable >>= U.asUniform matrix

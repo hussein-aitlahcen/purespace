@@ -1,4 +1,4 @@
--- Main.hs ---
+-- GameConfig.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,9 +17,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module Main where
+module PureSpace.Client.Game.Config
+  (
+    GameConfig (..)
+  )
+  where
 
-import           PureSpace.Client.Graphics.Window (runApp)
-
-main :: IO ()
-main = runApp
+data GameConfig = GameConfig deriving Show

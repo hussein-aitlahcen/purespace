@@ -17,19 +17,23 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module PureSpace.Client.ShaderProgram
+module PureSpace.Client.Graphics.Shader.Program
   (
     Program,
+    ShaderProgramState (..),
+    HasShaderProgramState (..),
     ShaderProgramError (..),
     AsShaderProgramError (..),
     Shader,
+    ShaderState,
+    HasShaderState (..),
     ShaderType (..),
     ShaderError (..),
     AsShaderError (..),
-    loadGameShaderProgram
+    loadGameShaderProgram,
+    shadersPath
   )
   where
 
@@ -40,38 +44,38 @@ import           Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects (Program, a
                                                                       programInfoLog,
                                                                       validateProgram,
                                                                       validateStatus)
-import           PureSpace.Client.Shader                             (AsShaderError (..),
+import           PureSpace.Client.Graphics.Shader                    (AsShaderError (..),
+                                                                      HasShaderState (..),
                                                                       Shader,
                                                                       ShaderError (..),
+                                                                      ShaderState (..),
                                                                       ShaderType (..),
-                                                                      loadGameShaders)
+                                                                      loadGameShaders,
+                                                                      shadersPath)
+import           PureSpace.Client.Graphics.Shader.Program.Error      (AsShaderProgramError (..),
+                                                                      ShaderProgramError (..))
+import           PureSpace.Client.Graphics.Shader.Program.State      (HasShaderProgramState (..),
+                                                                      ShaderProgramState (..))
 import           PureSpace.Common.Lens                               (MonadError,
                                                                       MonadIO,
-                                                                      Prism',
+                                                                      MonadState,
                                                                       liftIO,
-                                                                      prism,
-                                                                      throwing)
+                                                                      throwing,
+                                                                      use)
 import           PureSpace.Common.Prelude
 
-newtype ShaderProgramError = ShaderProgramValidationFailure String deriving Show
-
-class AsShaderProgramError s where
-  shaderProgramError              :: Prism' s ShaderProgramError
-  shaderProgramValidationFailure :: Prism' s String
-  shaderProgramValidationFailure = shaderProgramError . shaderProgramValidationFailure
-
-instance AsShaderProgramError ShaderProgramError where
-  shaderProgramError = id
-  shaderProgramValidationFailure =
-    let f = ShaderProgramValidationFailure
-        g = \case
-          ShaderProgramValidationFailure x -> Right x
-          x                                -> Left  x
-    in prism f g
-
-loadGameShaderProgram :: (MonadIO m, MonadError e m, AsShaderError e, AsShaderProgramError e) => m Program
-loadGameShaderProgram = do
-  shaders <- loadGameShaders [VertexShader, FragmentShader]
+loadGameShaderProgram :: (MonadIO m,
+                          MonadError e m,
+                          MonadState s m,
+                          HasShaderState s,
+                          HasShaderProgramState s,
+                          AsShaderError e,
+                          AsShaderProgramError e)
+                      => [(ShaderType, FilePath)] -> m Program
+loadGameShaderProgram s = do
+  loadGameShaders s
+  -- TODO: ugly but required
+  shaders <- pure . fmap snd =<< use shaderListState
   program <- liftIO createProgram
   traverse_ (liftIO . attachShader program) shaders
   liftIO $ linkProgram program

@@ -22,10 +22,14 @@ module PureSpace.Common.Prelude
     module Data.Semigroup,
     safeHead,
     bool,
-    traverse_
+    traverse_,
+    (&&&),
+    (***),
+    Kleisli (..)
   )
   where
 
+import           Control.Arrow  (Kleisli (..), (&&&), (***))
 import           Data.Foldable  (traverse_)
 import           Data.Semigroup
 

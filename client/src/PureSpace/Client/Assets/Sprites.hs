@@ -20,7 +20,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 
-module PureSpace.Client.Sprites
+module PureSpace.Client.Assets.Sprites
   (
     Sprite (..),
     SpriteAtlas (..),

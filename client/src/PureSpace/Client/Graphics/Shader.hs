@@ -17,15 +17,17 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module PureSpace.Client.Shader
+module PureSpace.Client.Graphics.Shader
   (
     Shader,
+    ShaderState,
+    HasShaderState (..),
     ShaderType (..),
     ShaderError (..),
     AsShaderError (..),
+    shadersPath,
     loadGameShaders
   )
   where
@@ -40,70 +42,39 @@ import           Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects (Shader, Sha
                                                                      releaseShaderCompiler,
                                                                      shaderInfoLog,
                                                                      shaderSourceBS)
+import           PureSpace.Client.Graphics.Shader.Error             (AsShaderError (..),
+                                                                     ShaderError (..))
+import           PureSpace.Client.Graphics.Shader.State             (HasShaderState (..),
+                                                                     ShaderState)
 import           PureSpace.Common.Files                             (doesFileExist)
 import           PureSpace.Common.Lens                              (MonadError,
                                                                      MonadIO,
-                                                                     Prism',
+                                                                     MonadState,
                                                                      liftIO,
-                                                                     prism,
-                                                                     throwing)
+                                                                     throwing,
+                                                                     (.=))
 import           PureSpace.Common.Prelude
-
-data ShaderError = ShaderFileNotFound       (ShaderType, String)
-                 | ShaderNotSupported       ShaderType
-                 | ShaderCompilationFailure (ShaderType, String)
-                 deriving Show
-
-class AsShaderError s where
-  shaderError             :: Prism' s ShaderError
-  shaderFileNotFound      :: Prism' s (ShaderType, String)
-  shaderCompilationFailed :: Prism' s (ShaderType, String)
-  shaderNotSupported      :: Prism' s ShaderType
-  shaderFileNotFound      = shaderError . shaderFileNotFound
-  shaderCompilationFailed = shaderError . shaderCompilationFailed
-  shaderNotSupported      = shaderError . shaderNotSupported
-
-instance AsShaderError ShaderError where
-  shaderError = id
-  shaderFileNotFound =
-    let f = ShaderFileNotFound
-        g = \case
-          ShaderFileNotFound x -> Right x
-          x                    -> Left x
-    in prism f g
-  shaderCompilationFailed =
-    let f = ShaderCompilationFailure
-        g = \case
-          ShaderCompilationFailure x -> Right x
-          x                          -> Left x
-    in prism f g
-  shaderNotSupported =
-    let
-      f = ShaderNotSupported
-      g = \case
-        ShaderNotSupported x -> Right x
-        x                    -> Left x
-    in prism f g
 
 shadersPath :: String
 shadersPath = "./shaders"
 
-shaderTypePath :: (MonadError e m, AsShaderError e) => ShaderType -> m String
-shaderTypePath FragmentShader = pure $ shadersPath <> "/sprite.frag"
-shaderTypePath VertexShader   = pure $ shadersPath <> "/sprite.vert"
-shaderTypePath st             = throwing shaderNotSupported st
-
--- TODO: refactor and extract this sort of thing to the common module
-loadShaderSource :: (MonadIO m, MonadError e m, AsShaderError e) => ShaderType -> m BS.ByteString
-loadShaderSource st = do
-  shaderPath <- shaderTypePath st
+loadShaderSource :: (MonadIO m,
+                     MonadError e m,
+                     AsShaderError e)
+                 => FilePath
+                 -> m BS.ByteString
+loadShaderSource shaderPath = do
   fileExists <- liftIO $ doesFileExist shaderPath
   bool fileExists
     (liftIO $ BS.readFile shaderPath)
-    (throwing shaderFileNotFound (st, shaderPath))
+    (throwing shaderFileNotFound shaderPath)
 
--- NOTTODO: liftIO's are boring
-createAndCompileShader :: (MonadIO m, MonadError e m, AsShaderError e) => ShaderType -> BS.ByteString -> m Shader
+createAndCompileShader :: (MonadIO m,
+                           MonadError e m,
+                           AsShaderError e)
+                       => ShaderType
+                       -> BS.ByteString
+                       -> m (ShaderType, Shader)
 createAndCompileShader st src = do
   shader <- liftIO $ createShader st
   shaderSourceBS shader $= src
@@ -111,13 +82,19 @@ createAndCompileShader st src = do
   success <- liftIO $ compileStatus shader
   liftIO releaseShaderCompiler
   bool success
-    (pure shader)
+    (pure (st, shader))
     (do
         compilationLog <- liftIO $ shaderInfoLog shader
         deleteObjectName shader
         throwing shaderCompilationFailed (st, "Shader compilation failed, log: " <> compilationLog))
 
-loadGameShaders :: (MonadIO m, MonadError e m, AsShaderError e) => [ShaderType] -> m [Shader]
-loadGameShaders shaderTypes = do
-  sources <- zip shaderTypes <$> traverse loadShaderSource shaderTypes
-  traverse (uncurry createAndCompileShader) sources
+loadGameShaders :: (MonadIO m,
+                    MonadError e m,
+                    MonadState s m,
+                    HasShaderState s,
+                    AsShaderError e)
+                => [(ShaderType, FilePath)] -> m ()
+loadGameShaders shaders = do
+  sources         <- (traverse . traverse) loadShaderSource shaders
+  compiledShaders <- traverse (uncurry createAndCompileShader) sources
+  shaderListState .= compiledShaders

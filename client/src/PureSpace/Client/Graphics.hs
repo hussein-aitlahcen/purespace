@@ -1,4 +1,4 @@
--- Matrix.hs ---
+-- Graphics.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,26 +17,18 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Matrix
+module PureSpace.Client.Graphics
   (
-    Matrix,
-    identity,
-    ortho2D
+    module PureSpace.Client.Graphics.Matrix,
+    module PureSpace.Client.Graphics.Shader,
+    module PureSpace.Client.Graphics.Shader.Program,
+    module PureSpace.Client.Graphics.Error,
+    module PureSpace.Client.Graphics.State
   )
   where
 
-import           Graphics.Rendering.OpenGL.GL (GLfloat)
-import qualified Linear                       as L
-
-type Matrix = L.M44 GLfloat
-
-identity :: Matrix
-identity = L.identity
-
-ortho2D :: Integral a => a -> a -> a -> Matrix
-ortho2D va w h
-  | w > h     = L.ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               (-1) 1
-  | otherwise = L.ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) (-1) 1
-  where
-    visibleArea = fromIntegral va
-    aspectRatio = fromIntegral w / fromIntegral h
+import           PureSpace.Client.Graphics.Error
+import           PureSpace.Client.Graphics.Matrix
+import           PureSpace.Client.Graphics.Shader
+import           PureSpace.Client.Graphics.State
+import           PureSpace.Client.Graphics.Shader.Program
