@@ -27,5 +27,5 @@ import qualified Graphics.GLUtil        as U
 import qualified Graphics.UI.GLUT       as GLUT
 import           PureSpace.Common.Monad
 
-uniform :: (MonadIO m, U.AsUniform t) => GLUT.Program -> t -> String -> m ()
-uniform program matrix variable = GLUT.get $ GLUT.uniformLocation program variable >>= U.asUniform matrix
+uniform :: (MonadIO m, U.AsUniform t) => String -> GLUT.Program -> t -> m ()
+uniform variable program matrix = GLUT.get $ GLUT.uniformLocation program variable >>= U.asUniform matrix

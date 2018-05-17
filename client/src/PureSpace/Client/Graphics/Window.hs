@@ -34,9 +34,9 @@ import           Data.Vector.Storable                                (fromList,
 import           Foreign.Storable                                    (Storable (..),
                                                                       sizeOf)
 import qualified Graphics.GLUtil                                     as U
-import           Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects (Program (..))
 import           Graphics.UI.GLUT                                    as GLUT hiding
                                                                               (ortho2D,
+                                                                              rotate,
                                                                               uniform)
 import qualified Linear                                              as L
 import           PureSpace.Client.Assets.Sprites
@@ -155,15 +155,15 @@ createVBO vertices = do
   where
     bufferSize = toEnum $ length vertices * sizeOf (head vertices)
 
--- Almost fully stateless rendering
 display :: Program -> TextureObject -> DrawableSprite -> DisplayCallback
 display program text (DrawableSprite _ (_, vao)) = do
   Size width height <- GLUT.get windowSize
   clear [ColorBuffer, DepthBuffer]
+  time <- elapsedTime
   currentProgram           $= Just program
   textureBinding Texture2D $= Just text
-  uniform program (ortho2D 1 width height)              "mProjection"
-  uniform program (identity & L.translation %~ (+ 0.3)) "mModelView"
+  uniform "mProjection" program (ortho2D 1 width height)
+  uniform "mModelView"  program (rotate (fromIntegral time / 360) identity)
   bindVertexArrayObject $= Just vao
   drawArrays Triangles 0 6
   bindVertexArrayObject $= Nothing

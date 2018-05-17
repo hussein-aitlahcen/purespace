@@ -21,6 +21,7 @@ module PureSpace.Client.Graphics.Matrix
   (
     Matrix,
     identity,
+    rotate,
     ortho2D
   )
   where
@@ -32,6 +33,13 @@ type Matrix = L.M44 GLfloat
 
 identity :: Matrix
 identity = L.identity
+
+rotate :: GLfloat -> Matrix -> Matrix
+rotate angle matrix = matrix L.!*! rotationMatrix
+  where
+    rotationMatrix = L.m33_to_m44
+                     $ L.fromQuaternion
+                     $ L.axisAngle (L.V3 0 0 1) angle
 
 ortho2D :: Integral a => a -> a -> a -> Matrix
 ortho2D va w h
