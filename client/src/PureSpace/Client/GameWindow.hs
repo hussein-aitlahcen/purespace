@@ -32,9 +32,10 @@ import           Data.List
 import           Data.Vector.Storable           (fromList, unsafeWith)
 import           Foreign.Storable               (Storable (..), sizeOf)
 import qualified Graphics.GLUtil                as U
-import           Graphics.UI.GLUT               as GLUT
+import           Graphics.UI.GLUT               as GLUT hiding (ortho2D)
 import qualified Linear                         as L
 import           PureSpace.Client.Game
+import           PureSpace.Client.Matrix
 import           PureSpace.Client.ShaderProgram
 import           PureSpace.Client.Sprites
 import           PureSpace.Common.Lens
@@ -94,7 +95,7 @@ initContext (SpriteAtlas image sprites) = do
       0
       (PixelData RGBA UnsignedByte ptr)
   liftIO $ generateMipmap' Texture2D
-  let (Just s@(Sprite _ x y w h)) = Data.List.find (\(Sprite name _ _ _ _) -> name == "playerShip2_blue.png") sprites
+  let (Just s@(Sprite _ x y w h)) = Data.List.find (\(Sprite name _ _ _ _) -> name == "playerShip1_blue.png") sprites
   vbo <- createVBO $ spriteVertices (normalizeUV x width) (normalizeUV y height) (normalizeUV w width) (normalizeUV h height)
   pure (texObject, DrawableSprite s vbo, shaderProgram)
   where
@@ -136,7 +137,7 @@ display program text (DrawableSprite _ (_, vao)) = do
   clear [ColorBuffer, DepthBuffer]
   currentProgram           $= Just program
   textureBinding Texture2D $= Just text
-  uniformMatrix (projectionMatrix width height)       "mProjection"
+  uniformMatrix (ortho2D 1 width height)              "mProjection"
   uniformMatrix (identity & L.translation %~ (+ 0.3)) "mModelView"
   bindVertexArrayObject $= Just vao
   drawArrays Triangles 0 6
@@ -144,14 +145,4 @@ display program text (DrawableSprite _ (_, vao)) = do
   currentProgram        $= Nothing
   swapBuffers
   where
-    identity = L.identity :: L.M44 GLfloat
-
     uniformMatrix mat n = GLUT.get $ uniformLocation program n >>= U.asUniform mat
-
-    projectionMatrix :: Integral a => a -> a -> L.M44 GLfloat
-    projectionMatrix w h
-      | w > h     = L.ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               (-1) 1
-      | otherwise = L.ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) (-1) 1
-      where
-        visibleArea = 1
-        aspectRatio = fromIntegral w / fromIntegral h

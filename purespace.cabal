@@ -59,6 +59,7 @@ executable purespace-client
                      , PureSpace.Client.GameState
                      , PureSpace.Client.GameConfig
                      , PureSpace.Client.GameWindow
+                     , PureSpace.Client.Matrix
   hs-source-dirs:      client/src/
   default-language:    Haskell2010
   ghc-options:         -Wall
