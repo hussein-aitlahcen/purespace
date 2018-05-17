@@ -17,11 +17,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module PureSpace.Client.Game
   (
-    GameApp (..),
     GameConfig (..),
     GameState (..),
     GameError (..),
@@ -36,13 +33,8 @@ import           PureSpace.Client.Graphics.State  (GraphicsState (..),
                                                    ShaderProgramState (..),
                                                    ShaderState (..))
 import           PureSpace.Client.Graphics.Window (createGameWindow)
-import           PureSpace.Common.Lens            (ExceptT, MonadIO,
-                                                   MonadReader, MonadState,
-                                                   ReaderT, StateT, evalStateT,
-                                                   runExceptT, runReaderT)
-
-newtype GameApp a = GameApp { unGame :: ExceptT GameError (ReaderT GameConfig (StateT GameState IO)) a }
-    deriving (Functor, Applicative, Monad, MonadReader GameConfig, MonadIO, MonadState GameState)
+import           PureSpace.Common.Lens            (evalStateT, runExceptT,
+                                                   runReaderT)
 
 runGame :: IO (Either GameError ())
 runGame = evalStateT (runReaderT (runExceptT go) config) state
