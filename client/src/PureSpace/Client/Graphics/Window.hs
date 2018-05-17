@@ -29,16 +29,11 @@ module PureSpace.Client.Graphics.Window
 
 import           Codec.Picture
 import           Data.List
-import           Data.Vector.Storable                                (fromList,
-                                                                      unsafeWith)
-import           Foreign.Storable                                    (Storable (..),
-                                                                      sizeOf)
-import qualified Graphics.GLUtil                                     as U
-import           Graphics.UI.GLUT                                    as GLUT hiding
-                                                                              (ortho2D,
-                                                                              rotate,
-                                                                              uniform)
-import qualified Linear                                              as L
+import           Data.Vector.Storable              (fromList, unsafeWith)
+import           Foreign.Storable                  (Storable (..), sizeOf)
+import qualified Graphics.GLUtil                   as U
+import           Graphics.UI.GLUT                  as GLUT hiding (ortho2D,
+                                                            rotate, uniform)
 import           PureSpace.Client.Assets.Sprites
 import           PureSpace.Client.Game
 import           PureSpace.Client.Graphics
