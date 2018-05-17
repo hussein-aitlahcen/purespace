@@ -43,9 +43,12 @@ rotate angle matrix = matrix L.!*! rotationMatrix
 
 ortho2D :: Integral a => a -> a -> a -> Matrix
 ortho2D va w h
-  | w > h     = L.ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               (-1) 1
-  | otherwise = L.ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) (-1) 1
+  | w > h     = L.ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               near far
+  | otherwise = L.ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) near far
   where
     visibleArea = fromIntegral va
     aspectRatio = fromIntegral w / fromIntegral h
+-- near/far fixed for ortho
+    near        = -1
+    far         = 1
 
