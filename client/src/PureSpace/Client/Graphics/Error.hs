@@ -1,4 +1,4 @@
--- GraphicsError.hs ---
+-- Error.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -36,13 +36,22 @@ import           PureSpace.Common.Lens                          (Prism', prism)
 
 data GraphicsError = GraphicsShaderError        ShaderError
                    | GraphicsShaderProgramError ShaderProgramError
+                   | GraphicsTextureError       FilePath
                    deriving Show
 
 class AsGraphicsError s where
-  graphicsError :: Prism' s GraphicsError
+  graphicsError           :: Prism' s GraphicsError
+  graphicsTextureError :: Prism' s FilePath
+  graphicsTextureError = graphicsError . graphicsTextureError
 
 instance AsGraphicsError GraphicsError where
   graphicsError = id
+  graphicsTextureError =
+    let f = GraphicsTextureError
+        g = \case
+          GraphicsTextureError x -> Right x
+          x                         -> Left  x
+    in prism f g
 
 instance AsShaderError GraphicsError where
   shaderError =

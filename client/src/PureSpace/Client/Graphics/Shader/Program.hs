@@ -1,4 +1,4 @@
--- ShaderProgram.hs ---
+-- Program.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -48,7 +48,7 @@ import           PureSpace.Client.Graphics.Shader                    (AsShaderEr
                                                                       HasShaderState (..),
                                                                       Shader,
                                                                       ShaderError (..),
-                                                                      ShaderState (..),
+                                                                      ShaderState,
                                                                       ShaderType (..),
                                                                       loadGameShaders,
                                                                       shadersPath)

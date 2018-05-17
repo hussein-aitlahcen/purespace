@@ -1,4 +1,4 @@
--- GameWindow.hs ---
+--Window.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,46 +17,32 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
 
 module PureSpace.Client.Graphics.Window
   (
-    runApp
+    createGameWindow
   )
   where
 
-import           Codec.Picture
-import           Data.List
-import           Data.Vector.Storable              (fromList, unsafeWith)
-import           Foreign.Storable                  (Storable (..), sizeOf)
-import qualified Graphics.GLUtil                   as U
-import           Graphics.UI.GLUT                  as GLUT hiding (ortho2D,
-                                                            rotate, uniform)
+import           Data.List                                        as L
+import           Graphics.UI.GLUT                                 as GLUT hiding (ortho2D,
+                                                                           rotate,
+                                                                           uniform)
 import           PureSpace.Client.Assets.Sprites
-import           PureSpace.Client.Game
 import           PureSpace.Client.Graphics
-import           PureSpace.Client.Graphics.Uniform
-import           PureSpace.Common.Lens
+import           PureSpace.Client.Graphics.Buffer
+import           PureSpace.Client.Graphics.Shader.Program.Uniform
+import           PureSpace.Client.Graphics.Texture
+import           PureSpace.Common.Monad
 import           PureSpace.Common.Prelude
-
-runApp :: IO ()
-runApp = do
-  result <- runGame (GameApp createGameWindow) appConfig appState
-  case result of
-    Left message -> print (message :: GameError)
-    Right _      -> putStrLn "Unseen string"
-  where
-    appState  = GameState (GraphicsState (ShaderProgramState Nothing) (ShaderState []))
-    appConfig = GameConfig
 {-
 ############################
 Everything under this line is complete garbage atm
 ############################
 -}
 
-data DrawableSprite = DrawableSprite Sprite (BufferObject, VertexArrayObject) deriving Show
+data GraphicsSprite = GraphicsSprite Sprite (BufferObject, VertexArrayObject) deriving Show
 
 openGLVersion :: (Int, Int)
 openGLVersion = (3, 3)
@@ -66,6 +52,7 @@ createGameWindow :: (MonadIO m,
                      MonadError e m,
                      HasShaderState s,
                      HasShaderProgramState s,
+                     AsGraphicsError e,
                      AsAssetError e,
                      AsShaderError e,
                      AsShaderProgramError e)
@@ -75,9 +62,9 @@ createGameWindow = do
   atlas                   <- loadAtlas
   (_, _)                  <- getArgsAndInitialize
   window                  <- createWindow "PureSpace"
-  (text, sprite, program) <- initContext atlas
-  liftIO $ print sprite
-  displayCallback $= display program text sprite
+  (text, sprites, program) <- initContext atlas
+  let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) (_, _)) -> name == "playerShip1_blue.png") sprites
+  displayCallback $= display program text ship
   idleCallback    $= Just (postRedisplay (Just window))
   mainLoop
 
@@ -86,72 +73,50 @@ initContext :: (MonadIO m,
                 MonadError e m,
                 HasShaderState s,
                 HasShaderProgramState s,
+                AsGraphicsError e,
                 AsShaderError e,
                 AsShaderProgramError e)
             => SpriteAtlas
-            -> m (TextureObject, DrawableSprite, Program)
+            -> m (TextureObject, [GraphicsSprite], Program)
 initContext (SpriteAtlas image sprites) = do
   liftIO $ putStrLn "initialize"
-  program <- loadGameShaderProgram [(VertexShader, shadersPath <> "/sprite.vert"), (FragmentShader, shadersPath <> "/sprite.frag")]
+  program <- loadGameShaderProgram [(VertexShader  , shadersPath <> "/sprite.vert")
+                                  , (FragmentShader, shadersPath <> "/sprite.frag")]
   initialDisplayMode          $= [DoubleBuffered]
   blend                       $= Enabled
   sampleAlphaToOne            $= Enabled
   sampleAlphaToCoverage       $= Enabled
   depthBounds                 $= Nothing
   depthFunc                   $= Nothing
-  texObject <- genObjectName
-  textureBinding  Texture2D   $= Just texObject
-  textureWrapMode Texture2D S $= (Mirrored, ClampToBorder)
-  textureWrapMode Texture2D T $= (Mirrored, ClampToBorder)
-  textureFilter   Texture2D   $= ((Linear', Nothing), Linear')
-  (Right (ImageRGBA8 (Image width height pixels))) <- liftIO $ readImage image
-  liftIO $ unsafeWith pixels $ \ptr ->
-    texImage2D
-      Texture2D
-      NoProxy
-      0
-      RGBA8
-      (TextureSize2D (fromIntegral width) (fromIntegral height))
-      0
-      (PixelData RGBA UnsignedByte ptr)
-  liftIO $ generateMipmap' Texture2D
-  let (Just s@(Sprite _ x y w h)) = Data.List.find (\(Sprite name _ _ _ _) -> name == "playerShip1_blue.png") sprites
-  vbo <- createVBO $ spriteVertices (normalizeUV x width) (normalizeUV y height) (normalizeUV w width) (normalizeUV h height)
-  pure (texObject, DrawableSprite s vbo, program)
+  (SpriteTexture w h text) <- createTexture image
+  graphicsSprites <- traverse (initSpriteBuffer w h) sprites
+  pure (text, graphicsSprites, program)
+
+initSpriteBuffer :: MonadIO m => Int -> Int -> Sprite -> m GraphicsSprite
+initSpriteBuffer imgW imgH sprite@(Sprite _ x y w h) =
+  pure GraphicsSprite
+  <*> pure sprite
+  <*> createVBO triangles
   where
-    normalizeUV a b = fromIntegral a / fromIntegral b
-
-spriteVertices ::GLfloat -> GLfloat -> GLfloat -> GLfloat -> [GLfloat]
-spriteVertices x y w h =
+    norm a b = fromIntegral a / fromIntegral b
+    nX = norm x imgW
+    nY = norm y imgH
+    nW = norm w imgW
+    nH = norm h imgH
+    triangles =
       [
-        -w/2,  h/2, x, y,
-         w/2,  h/2, x + w, y,
-         w/2, -h/2, x + w, y + h,
+        -- vertexX, vertexY, textureX, textureY
+        -nW/2,  nH/2, nX, nY,
+         nW/2,  nH/2, nX + nW, nY,
+         nW/2, -nH/2, nX + nW, nY + nH,
 
-        -w/2,  h/2, x, y,
-         w/2, -h/2, x + w, y + h,
-        -w/2, -h/2, x, y + h
+        -nW/2,  nH/2, nX, nY,
+         nW/2, -nH/2, nX + nW, nY + nH,
+        -nW/2, -nH/2, nX, nY + nH
       ]
 
-createVBO :: MonadIO m => [GLfloat] -> m (BufferObject, VertexArrayObject)
-createVBO vertices = do
-  vertexArray  <- genObjectName
-  vertexBuffer <- genObjectName
-  bindBuffer ArrayBuffer $= Just vertexBuffer
-  let vector = fromList vertices
-  liftIO $ unsafeWith vector $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize, ptr, StaticDraw)
-  bindVertexArrayObject                  $= Just vertexArray
-  vertexAttribArray   (AttribLocation 0) $= Enabled
-  vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 4 Float 0 U.offset0)
-  bindBuffer ArrayBuffer                 $= Nothing
-  bindVertexArrayObject                  $= Nothing
-  pure (vertexBuffer, vertexArray)
-  where
-    bufferSize = toEnum $ length vertices * sizeOf (head vertices)
-
-display :: Program -> TextureObject -> DrawableSprite -> DisplayCallback
-display program text (DrawableSprite _ (_, vao)) = do
+display :: Program -> TextureObject -> GraphicsSprite -> DisplayCallback
+display program text (GraphicsSprite _ (_, vao)) = do
   Size width height <- GLUT.get windowSize
   clear [ColorBuffer, DepthBuffer]
   time <- elapsedTime

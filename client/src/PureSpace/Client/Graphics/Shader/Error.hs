@@ -1,4 +1,4 @@
--- ShaderError.hs ---
+-- Error.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 

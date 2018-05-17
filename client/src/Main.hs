@@ -19,7 +19,13 @@
 
 module Main where
 
-import           PureSpace.Client.Graphics.Window (runApp)
+import           PureSpace.Client.Game
 
 main :: IO ()
-main = runApp
+main = do
+  result <- runGame appConfig
+  case result of
+    Left message -> print (message :: GameError)
+    Right _      -> putStrLn "Unseen string"
+  where
+    appConfig = GameConfig

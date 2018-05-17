@@ -57,6 +57,7 @@ executable purespace-client
                      , PureSpace.Client.Graphics.Shader.Program
                      , PureSpace.Client.Graphics.Shader.Program.Error
                      , PureSpace.Client.Graphics.Shader.Program.State
+                     , PureSpace.Client.Graphics.Shader.Program.Uniform
                      , PureSpace.Client.Assets.Sprites
                      , PureSpace.Client.Game
                      , PureSpace.Client.Game.Error
@@ -67,7 +68,8 @@ executable purespace-client
                      , PureSpace.Client.Graphics.State
                      , PureSpace.Client.Graphics.Window
                      , PureSpace.Client.Graphics.Matrix
-                     , PureSpace.Client.Graphics.Uniform
+                     , PureSpace.Client.Graphics.Buffer
+                     , PureSpace.Client.Graphics.Texture
   hs-source-dirs:      client/src/
   default-language:    Haskell2010
   ghc-options:         -Wall
