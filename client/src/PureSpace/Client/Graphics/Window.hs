@@ -55,9 +55,9 @@ createGameWindow :: (MonadIO m,
                  => m ()
 createGameWindow = do
   initialContextVersion $= openGLVersion
-  atlas                   <- loadAtlas
-  (_, _)                  <- getArgsAndInitialize
-  window                  <- createWindow "PureSpace"
+  atlas                    <- loadAtlas
+  (_, _)                   <- getArgsAndInitialize
+  window                   <- createWindow "PureSpace"
   (text, sprites, program) <- initContext atlas
   let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) (_, _)) -> name == "playerShip1_blue.png") sprites
   displayCallback $= display program text ship
@@ -85,7 +85,7 @@ initContext (SpriteAtlas image sprites) = do
   depthBounds                 $= Nothing
   depthFunc                   $= Nothing
   (SpriteTexture w h text) <- createTexture image
-  graphicsSprites <- traverse (initSpriteBuffer w h) sprites
+  graphicsSprites          <- traverse (initSpriteBuffer w h) sprites
   pure (text, graphicsSprites, program)
 
 initSpriteBuffer :: MonadIO m => Int -> Int -> Sprite -> m GraphicsSprite
