@@ -23,9 +23,9 @@ module PureSpace.Client.Graphics.Shader.Program.Uniform
   )
   where
 
-import qualified Graphics.GLUtil        as U
-import qualified Graphics.UI.GLUT       as GLUT
-import           PureSpace.Common.Monad
+import           Graphics.GLUtil        (AsUniform, asUniform)
+import           Graphics.UI.GLUT       (Program, get, uniformLocation)
+import           PureSpace.Common.Monad (MonadIO)
 
-uniform :: (MonadIO m, U.AsUniform t) => String -> GLUT.Program -> t -> m ()
-uniform variable program matrix = GLUT.get $ GLUT.uniformLocation program variable >>= U.asUniform matrix
+uniform :: (MonadIO m, AsUniform t) => Program -> String -> t -> m ()
+uniform program variable matrix = get $ uniformLocation program variable >>= asUniform matrix

@@ -25,10 +25,9 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
-import           Data.List                                        as L
-import           Graphics.UI.GLUT                                 as GLUT hiding (ortho2D,
-                                                                           rotate,
-                                                                           uniform)
+import           Data.List                       as L
+import           Graphics.UI.GLUT                as GLUT hiding (ortho2D,
+                                                          rotate, uniform)
 import           PureSpace.Client.Assets.Sprites
 import           PureSpace.Client.Graphics
 import           PureSpace.Common.Monad
@@ -119,10 +118,12 @@ display program text (GraphicsSprite _ (_, vao)) = do
   time <- elapsedTime
   currentProgram           $= Just program
   textureBinding Texture2D $= Just text
-  uniform "mProjection" program (ortho2D 1 width height)
-  uniform "mModelView"  program (rotate (fromIntegral time / 360) identity)
+  uniformP "mProjection" (ortho2D 1 width height)
+  uniformP "mModelView"  (rotate (fromIntegral time / 360) identity)
   bindVertexArrayObject $= Just vao
   drawArrays Triangles 0 6
   bindVertexArrayObject $= Nothing
   currentProgram        $= Nothing
   swapBuffers
+  where
+    uniformP = uniform program
