@@ -101,7 +101,8 @@ initSpriteBuffer imgW imgH sprite@(Sprite _ x y w h) =
     nH = norm h imgH
     triangles =
       [
-        -- vertexX, vertexY, textureX, textureY
+        -- vertexX, vertexY, textureX, textureY,
+        -- interpreted as vec4 by the vertex shader
         -nW/2,  nH/2, nX, nY,
          nW/2,  nH/2, nX + nW, nY,
          nW/2, -nH/2, nX + nW, nY + nH,
