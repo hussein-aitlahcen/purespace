@@ -2,11 +2,11 @@
 
 in vec2 vTextureCoords;
 
-out vec4 FragColor;
+out vec4 vFragColor;
 
-uniform sampler2D spriteTexture;
+uniform sampler2D sSpriteTexture;
         
 void main()
 {    
-    FragColor = texture2D(spriteTexture, vTextureCoords);
+    vFragColor = texture2D(sSpriteTexture, vTextureCoords);
 }  
