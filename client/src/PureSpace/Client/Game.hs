@@ -26,23 +26,21 @@ module PureSpace.Client.Game
   )
   where
 
-import           PureSpace.Client.Game.Config     (GameConfig (..))
-import           PureSpace.Client.Game.Error      (GameError (..))
-import           PureSpace.Client.Game.State      (GameState (..))
-import           PureSpace.Client.Graphics.State  (GraphicsState (..),
-                                                   ShaderProgramState (..),
-                                                   ShaderState (..))
-import           PureSpace.Client.Graphics.Window (createGameWindow)
+import           PureSpace.Client.Game.Config
+import           PureSpace.Client.Game.Error
+import           PureSpace.Client.Game.State
+import           PureSpace.Client.Graphics.Window
 import           PureSpace.Common.Lens            (evalStateT, runExceptT,
                                                    runReaderT)
 
 runGame :: IO (Either GameError ())
-runGame = evalStateT (runReaderT (runExceptT go) config) state
+runGame = evalStateT (runReaderT (runExceptT go) config) initialGameState
   where
     config = GameConfig
-    state  = GameState (GraphicsState (ShaderProgramState Nothing) (ShaderState []))
     go = do
       createGameWindow
+      -- TODO: graphics running, boot network, then game fsm ?
       pure ()
+
 
 

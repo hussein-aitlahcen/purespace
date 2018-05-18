@@ -21,31 +21,19 @@
 
 module PureSpace.Client.Game.Error
   (
+    module PureSpace.Common.Resource.Error,
+    module PureSpace.Client.Graphics.Error,
     GameError (..),
     AsGameError (..),
-    GraphicsError (..),
-    AsGraphicsError (..),
-    AssetError (..),
-    AsAssetError (..),
-    ShaderError (..),
-    AsShaderError (..),
-    ShaderProgramError (..),
-    AsShaderProgramError (..)
   )
   where
 
-import           PureSpace.Client.Assets         (AsAssetError (..),
-                                                  AssetError (..))
-import           PureSpace.Client.Graphics.Error (AsGraphicsError (..),
-                                                  AsShaderError (..),
-                                                  AsShaderProgramError (..),
-                                                  GraphicsError (..),
-                                                  ShaderError (..),
-                                                  ShaderProgramError (..))
-import           PureSpace.Common.Lens
+import           PureSpace.Client.Graphics.Error
+import           PureSpace.Common.Resource.Error
+import           PureSpace.Common.Lens           (Prism', prism)
 
-data GameError = GameAssetError    AssetError
-               | GameGraphicsError GraphicsError
+data GameError = GameGraphicsError GraphicsError
+               | GameResourceError ResourceError
                deriving Show
 
 class AsGameError s where
@@ -54,12 +42,12 @@ class AsGameError s where
 instance AsGameError GameError where
   gameError = id
 
-instance AsAssetError GameError where
-  assetError =
-    let f = GameAssetError
+instance AsResourceError GameError where
+  resourceError =
+    let f = GameResourceError
         g = \case
-          GameAssetError x -> Right x
-          x                -> Left  x
+          GameResourceError x -> Right x
+          x                   -> Left  x
     in prism f g
 
 instance AsGraphicsError GameError where
@@ -69,6 +57,9 @@ instance AsGraphicsError GameError where
           GameGraphicsError x -> Right x
           x                   -> Left  x
     in prism f g
+
+instance AsAssetError GameError where
+  assetError = graphicsError . assetError
 
 instance AsShaderError GameError where
   shaderError = graphicsError . shaderError

@@ -17,25 +17,21 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module PureSpace.Client.Graphics.State
   (
+    module PureSpace.Client.Graphics.Device.State,
+    module PureSpace.Client.Graphics.Program.State,
     GraphicsState (..),
     HasGraphicsState (..),
-    ShaderProgramState (..),
-    HasShaderProgramState (..),
-    ShaderState (..),
-    HasShaderState (..)
+    initialGraphicsState
   )
   where
 
-import           PureSpace.Client.Graphics.Shader.Program.State
-import           PureSpace.Client.Graphics.Shader.State
+import           PureSpace.Client.Graphics.Device.State
+import           PureSpace.Client.Graphics.Program.State
 import           PureSpace.Common.Lens
 
-data GraphicsState = GraphicsState ShaderProgramState ShaderState deriving Show
+data GraphicsState = GraphicsState ShaderProgramState DeviceState
 
 class HasGraphicsState s where
   graphicsState :: Lens' s GraphicsState
@@ -43,14 +39,20 @@ class HasGraphicsState s where
 instance HasGraphicsState GraphicsState where
   graphicsState = id
 
-instance HasShaderState GraphicsState where
-  shaderState =
-    let f (GraphicsState _ y)   = y
-        g (GraphicsState x _) y = GraphicsState x y
-    in graphicsState . lens f g
-
 instance HasShaderProgramState GraphicsState where
   shaderProgramState =
     let f (GraphicsState x _)   = x
         g (GraphicsState _ y) x = GraphicsState x y
     in lens f g
+
+instance HasShaderState GraphicsState where
+  shaderState = shaderProgramState . shaderState
+
+instance HasDeviceState GraphicsState where
+  deviceState =
+    let f (GraphicsState _ y)   = y
+        g (GraphicsState x _) y = GraphicsState x y
+    in lens f g
+
+initialGraphicsState :: GraphicsState
+initialGraphicsState = GraphicsState initialShaderProgramState initialDeviceState

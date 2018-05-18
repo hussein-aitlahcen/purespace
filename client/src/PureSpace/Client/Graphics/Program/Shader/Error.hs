@@ -19,8 +19,10 @@
 
 {-# LANGUAGE LambdaCase #-}
 
-module PureSpace.Client.Graphics.Shader.Error
+module PureSpace.Client.Graphics.Program.Shader.Error
   (
+    module PureSpace.Common.Resource.Error,
+    ShaderEntry,
     ShaderError (..),
     AsShaderError (..),
   )
@@ -29,38 +31,33 @@ module PureSpace.Client.Graphics.Shader.Error
 import           Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects (ShaderType (..))
 import           PureSpace.Common.Lens                              (Prism',
                                                                      prism)
-data ShaderError = ShaderFileNotFound       FilePath
-                 | ShaderNotSupported       ShaderType
+import           PureSpace.Common.Resource.Error
+
+type ShaderEntry = (ShaderType, FilePath)
+
+data ShaderError = ShaderNotSupported       ShaderEntry
                  | ShaderCompilationFailure (ShaderType, String)
                  deriving Show
 
 class AsShaderError s where
   shaderError             :: Prism' s ShaderError
-  shaderFileNotFound      :: Prism' s FilePath
   shaderCompilationFailed :: Prism' s (ShaderType, String)
-  shaderNotSupported      :: Prism' s ShaderType
-  shaderFileNotFound      = shaderError . shaderFileNotFound
+  shaderNotSupported      :: Prism' s ShaderEntry
   shaderCompilationFailed = shaderError . shaderCompilationFailed
   shaderNotSupported      = shaderError . shaderNotSupported
 
 instance AsShaderError ShaderError where
   shaderError = id
-  shaderFileNotFound =
-    let f = ShaderFileNotFound
-        g = \case
-          ShaderFileNotFound x -> Right x
-          x                    -> Left x
-    in prism f g
   shaderCompilationFailed =
     let f = ShaderCompilationFailure
         g = \case
           ShaderCompilationFailure x -> Right x
-          x                          -> Left x
+          x                          -> Left  x
     in prism f g
   shaderNotSupported =
     let
       f = ShaderNotSupported
       g = \case
         ShaderNotSupported x -> Right x
-        x                    -> Left x
+        x                    -> Left  x
     in prism f g

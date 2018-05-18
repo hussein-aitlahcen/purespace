@@ -19,7 +19,7 @@
 
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module PureSpace.Client.Graphics.Texture
+module PureSpace.Client.Graphics.Memory.Texture
   (
     SpriteTexture (..),
     createTexture

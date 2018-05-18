@@ -19,16 +19,22 @@
 
 {-# LANGUAGE LambdaCase #-}
 
-module PureSpace.Client.Graphics.Shader.Program.Error
+module PureSpace.Client.Graphics.Program.Error
   (
+    module PureSpace.Client.Graphics.Program.Shader.Error,
     ShaderProgramError (..),
     AsShaderProgramError (..),
   )
   where
 
-import           PureSpace.Common.Lens (Prism', prism)
+import           PureSpace.Client.Graphics.Program.Shader.Error
+import           PureSpace.Common.Lens                          (Prism', prism)
 
-newtype ShaderProgramError = ShaderProgramValidationFailure String deriving Show
+
+data ShaderProgramError = ShaderProgramShaderError       ShaderError
+                        | ShaderProgramValidationFailure String
+                        deriving Show
+
 
 class AsShaderProgramError s where
   shaderProgramError             :: Prism' s ShaderProgramError
@@ -42,4 +48,12 @@ instance AsShaderProgramError ShaderProgramError where
         g = \case
           ShaderProgramValidationFailure x -> Right x
           x                                -> Left  x
+    in prism f g
+
+instance AsShaderError ShaderProgramError where
+  shaderError =
+    let f = ShaderProgramShaderError
+        g = \case
+          ShaderProgramShaderError x -> Right x
+          x                          -> Left  x
     in prism f g

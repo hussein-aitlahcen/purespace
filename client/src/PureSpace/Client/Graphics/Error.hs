@@ -21,26 +21,24 @@
 
 module PureSpace.Client.Graphics.Error
   (
+    module PureSpace.Client.Graphics.Assets.Error,
+    module PureSpace.Client.Graphics.Program.Error,
     GraphicsError (..),
     AsGraphicsError (..),
-    ShaderError (..),
-    AsShaderError (..),
-    ShaderProgramError (..),
-    AsShaderProgramError (..)
   )
   where
 
-import           PureSpace.Client.Graphics.Shader.Error
-import           PureSpace.Client.Graphics.Shader.Program.Error
-import           PureSpace.Common.Lens                          (Prism', prism)
+import           PureSpace.Client.Graphics.Assets.Error
+import           PureSpace.Client.Graphics.Program.Error
+import           PureSpace.Common.Lens                   (Prism', prism)
 
-data GraphicsError = GraphicsShaderError        ShaderError
+data GraphicsError = GraphicsAssetError         AssetError
                    | GraphicsShaderProgramError ShaderProgramError
                    | GraphicsTextureError       FilePath
                    deriving Show
 
 class AsGraphicsError s where
-  graphicsError           :: Prism' s GraphicsError
+  graphicsError        :: Prism' s GraphicsError
   graphicsTextureError :: Prism' s FilePath
   graphicsTextureError = graphicsError . graphicsTextureError
 
@@ -53,13 +51,13 @@ instance AsGraphicsError GraphicsError where
           x                         -> Left  x
     in prism f g
 
-instance AsShaderError GraphicsError where
-  shaderError =
-    let f = GraphicsShaderError
-        g = \case
-          GraphicsShaderError x -> Right x
-          x                     -> Left  x
-    in prism f g
+instance AsAssetError GraphicsError where
+   assetError =
+     let f = GraphicsAssetError
+         g = \case
+           GraphicsAssetError x -> Right x
+           x                            -> Left  x
+     in prism f g
 
 instance AsShaderProgramError GraphicsError where
    shaderProgramError =
@@ -68,3 +66,6 @@ instance AsShaderProgramError GraphicsError where
            GraphicsShaderProgramError x -> Right x
            x                            -> Left  x
      in prism f g
+
+instance AsShaderError GraphicsError where
+  shaderError = shaderProgramError . shaderError

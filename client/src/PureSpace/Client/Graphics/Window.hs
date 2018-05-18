@@ -25,15 +25,17 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
-import           Control.Concurrent              (threadDelay)
-import           Data.List                       as L
-import           Graphics.GLUtil.BufferObjects   (makeBuffer)
-import           Graphics.UI.GLUT                as GLUT hiding (ortho2D,
-                                                          rotate, uniform)
-import           PureSpace.Client.Assets.Sprites
+import           Control.Concurrent            (forkIO, threadDelay)
+import           Control.Concurrent.STM.TChan
+import           Control.Monad.STM
+import           Data.List                     as L
+import           Graphics.GLUtil.BufferObjects (makeBuffer)
+import           Graphics.UI.GLUT              as GLUT hiding (ortho2D, rotate,
+                                                        uniform)
 import           PureSpace.Client.Graphics
 import           PureSpace.Common.Monad
 import           PureSpace.Common.Prelude
+
 {-
 ############################
 Everything under this line is complete garbage atm
@@ -51,6 +53,7 @@ fps = 120
 createGameWindow :: (MonadIO m,
                      MonadState s m,
                      MonadError e m,
+                     AsResourceError e,
                      HasShaderState s,
                      HasShaderProgramState s,
                      AsGraphicsError e,
@@ -60,26 +63,37 @@ createGameWindow :: (MonadIO m,
                  => m ()
 createGameWindow = do
   initialContextVersion $= openGLVersion
-  atlas                    <- loadAtlas
+  atlas                    <- loadAssetJSON ("sprite_atlas", spriteSheetPath)
   (_, _)                   <- getArgsAndInitialize
   window                   <- createWindow "PureSpace"
   (text, sprites, program) <- initContext atlas
   let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) _) -> name == "playerShip3_orange.png") sprites
   displayCallback $= display program text ship
   idleCallback    $= Just (postRedisplay (Just window))
+  inputChan     <- liftIO $ atomically newBroadcastTChan
+  keyboardMouseCallback $= Just (inputStream inputChan)
+  readInputChan <- liftIO $ atomically $ dupTChan inputChan
+  liftIO $ forkIO $ loop readInputChan
   windowLoop
+  where
+    loop c = do
+      event <- atomically $ readTChan c
+      print event
+      loop c
+
 
 windowLoop :: MonadIO m => m ()
 windowLoop = mainLoopEvent *> delayLoop *> windowLoop
   where
     delayLoop =
       let microsecond = 1000000 :: Float
-          step = round $ microsecond / fromIntegral fps
+          step        = round $ microsecond / fromIntegral fps
       in liftIO $ threadDelay step
 
 initContext :: (MonadIO m,
                 MonadState s m,
                 MonadError e m,
+                AsResourceError e,
                 HasShaderState s,
                 HasShaderProgramState s,
                 AsGraphicsError e,
@@ -116,12 +130,12 @@ createGraphicsSprite buffer i sprite =
 display :: Program -> TextureObject -> GraphicsSprite -> DisplayCallback
 display program text (GraphicsSprite _ vao) = do
   Size width height <- GLUT.get windowSize
+  time              <- elapsedTime
   clear [ColorBuffer, DepthBuffer]
-  time <- elapsedTime
   currentProgram           $= Just program
   textureBinding Texture2D $= Just text
-  uniformP "mProjection" (ortho2D 1 width height)
-  uniformP "mModelView"  (rotate (fromIntegral time / 360) identity)
+  uniformP "mProjection" $ projection width height
+  uniformP "mModelView"  $ modelView time
   bindVertexArrayObject $= Just vao
   drawArrays Triangles 0 6
   bindVertexArrayObject $= Nothing
@@ -129,4 +143,6 @@ display program text (GraphicsSprite _ vao) = do
   swapBuffers
   postRedisplay Nothing
   where
-    uniformP = uniform program
+    uniformP    = uniform program
+    projection  = ortho2D 1
+    modelView t = rotate (fromIntegral t / 360) identity

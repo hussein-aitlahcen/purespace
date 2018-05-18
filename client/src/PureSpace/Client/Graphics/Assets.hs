@@ -1,4 +1,4 @@
--- Sprites.hs ---
+-- Assets.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -20,21 +20,28 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 
-module PureSpace.Client.Assets.Sprites
+module PureSpace.Client.Graphics.Assets
   (
+    module PureSpace.Client.Graphics.Assets.Error,
+    module PureSpace.Common.Resource,
     Sprite (..),
     SpriteAtlas (..),
-    AsAssetError (..),
-    AssetError (..),
-    loadAtlas
+    assetsPath,
+    spritesPath,
+    spriteSheetPath,
+    loadAssetJSON
   )
   where
 
-import           Data.Aeson              (FromJSON, parseJSON, withObject, (.:))
-import           Data.Semigroup          ((<>))
-import           PureSpace.Client.Assets (AsAssetError (..), AssetError (..),
-                                          loadAssetJSON, spritesPath)
-import           PureSpace.Common.Monad  (MonadError, MonadIO)
+import           Data.Aeson                             (FromJSON, eitherDecode,
+                                                         parseJSON, withObject,
+                                                         (.:))
+import qualified Data.ByteString.Lazy                   as BS
+import           PureSpace.Client.Graphics.Assets.Error
+import           PureSpace.Common.Lens                  (MonadError, MonadIO,
+                                                         throwing)
+import           PureSpace.Common.Prelude
+import           PureSpace.Common.Resource
 
 data Sprite = Sprite String Int Int Int Int deriving Show
 
@@ -58,5 +65,23 @@ instance FromJSON SpriteAtlas where
     where
       preprendPath = ((spritesPath <> "/") <>)
 
-loadAtlas :: (MonadIO m, MonadError e m, AsAssetError e) => m SpriteAtlas
-loadAtlas = loadAssetJSON (spritesPath <> "/sheet.json")
+assetsPath :: String
+assetsPath = "./assets"
+
+spriteSheetPath :: FilePath
+spriteSheetPath = spritesPath <> "/sheet.json"
+
+spritesPath :: String
+spritesPath = assetsPath <> "/Spritesheet"
+
+loadAssetJSON :: (MonadIO m,
+                  MonadError e m,
+                  AsResourceError e,
+                  AsAssetError e,
+                  FromJSON a)
+              => AssetEntry -> m a
+loadAssetJSON entry@(_, path) = do
+  content <- loadResource BS.readFile path
+  case eitherDecode content of
+    Right asset  -> pure asset
+    Left message -> throwing assetDecodingFailure (entry, message)

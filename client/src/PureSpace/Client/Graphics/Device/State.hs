@@ -17,32 +17,31 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Game.State
+module PureSpace.Client.Graphics.Device.State
   (
-    GameState (..),
-    GraphicsState (..),
-    ShaderProgramState (..),
-    ShaderState (..),
-    initialGameState
+    InputStream,
+    DeviceState (..),
+    HasDeviceState (..),
+    initialDeviceState
   )
   where
 
-import           PureSpace.Client.Graphics.State
-import           PureSpace.Common.Lens           (lens)
+import           PureSpace.Client.Graphics.Device.Input (InputStream)
+import           PureSpace.Common.Lens                  (Lens', lens)
 
-newtype GameState = GameState GraphicsState
+newtype DeviceState = DeviceState (Maybe InputStream)
 
-instance HasGraphicsState GameState where
-  graphicsState =
-    let f (GameState x)   = x
-        g (GameState _) x = GameState x
+class HasDeviceState s where
+  deviceState      :: Lens' s DeviceState
+  deviceInputState :: Lens' s (Maybe InputStream)
+  deviceInputState = deviceState . deviceInputState
+
+instance HasDeviceState DeviceState where
+  deviceState = id
+  deviceInputState =
+    let f (DeviceState x)   = x
+        g (DeviceState _) x = DeviceState x
     in lens f g
 
-instance HasShaderState GameState where
-  shaderState = graphicsState . shaderState
-
-instance HasShaderProgramState GameState where
-  shaderProgramState = graphicsState . shaderProgramState
-
-initialGameState :: GameState
-initialGameState = GameState initialGraphicsState
+initialDeviceState :: DeviceState
+initialDeviceState = DeviceState Nothing

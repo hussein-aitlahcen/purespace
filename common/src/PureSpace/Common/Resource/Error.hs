@@ -1,4 +1,4 @@
--- State.hs ---
+-- Resource.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,32 +17,28 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Game.State
+{-# LANGUAGE LambdaCase #-}
+
+module PureSpace.Common.Resource.Error
   (
-    GameState (..),
-    GraphicsState (..),
-    ShaderProgramState (..),
-    ShaderState (..),
-    initialGameState
+    ResourceError (..),
+    AsResourceError (..),
   )
   where
 
-import           PureSpace.Client.Graphics.State
-import           PureSpace.Common.Lens           (lens)
+import           PureSpace.Common.Lens
 
-newtype GameState = GameState GraphicsState
+newtype ResourceError = ResourceFileNotFound FilePath deriving Show
 
-instance HasGraphicsState GameState where
-  graphicsState =
-    let f (GameState x)   = x
-        g (GameState _) x = GameState x
-    in lens f g
+class AsResourceError s where
+  resourceError        :: Prism' s ResourceError
+  resourceFileNotFound :: Prism' s FilePath
 
-instance HasShaderState GameState where
-  shaderState = graphicsState . shaderState
-
-instance HasShaderProgramState GameState where
-  shaderProgramState = graphicsState . shaderProgramState
-
-initialGameState :: GameState
-initialGameState = GameState initialGraphicsState
+instance AsResourceError ResourceError where
+  resourceError = id
+  resourceFileNotFound =
+    let f = ResourceFileNotFound
+        g = \case
+          ResourceFileNotFound x -> Right x
+          x                      -> Left  x
+    in prism f g

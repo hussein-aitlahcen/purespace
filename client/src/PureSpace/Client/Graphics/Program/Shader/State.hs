@@ -17,18 +17,19 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Graphics.Shader.State
+module PureSpace.Client.Graphics.Program.Shader.State
   (
     Shader,
+    ShaderType,
     ShaderState (..),
-    HasShaderState (..)
+    HasShaderState (..),
+    initialShaderState
   )
   where
 
 import           Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects (Shader, ShaderType)
 import           PureSpace.Common.Lens                              (Lens',
                                                                      lens)
-
 type ShaderEntry    = (ShaderType, Shader)
 type Shaders        = [ShaderEntry]
 
@@ -45,3 +46,6 @@ instance HasShaderState ShaderState where
     let f (ShaderState x)   = x
         g (ShaderState _) x = ShaderState x
     in lens f g
+
+initialShaderState :: ShaderState
+initialShaderState = ShaderState []

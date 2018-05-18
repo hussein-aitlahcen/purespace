@@ -19,14 +19,11 @@
 
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module PureSpace.Client.Graphics.Shader
+module PureSpace.Client.Graphics.Program.Shader
   (
-    Shader,
-    ShaderState,
-    HasShaderState (..),
-    ShaderType (..),
-    ShaderError (..),
-    AsShaderError (..),
+    module PureSpace.Common.Resource,
+    module PureSpace.Client.Graphics.Program.Shader.Error,
+    module PureSpace.Client.Graphics.Program.Shader.State,
     shadersPath,
     loadGameShaders
   )
@@ -42,11 +39,8 @@ import           Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects (Shader, Sha
                                                                      releaseShaderCompiler,
                                                                      shaderInfoLog,
                                                                      shaderSourceBS)
-import           PureSpace.Client.Graphics.Shader.Error             (AsShaderError (..),
-                                                                     ShaderError (..))
-import           PureSpace.Client.Graphics.Shader.State             (HasShaderState (..),
-                                                                     ShaderState)
-import           PureSpace.Common.Files                             (doesFileExist)
+import           PureSpace.Client.Graphics.Program.Shader.Error
+import           PureSpace.Client.Graphics.Program.Shader.State
 import           PureSpace.Common.Lens                              (MonadError,
                                                                      MonadIO,
                                                                      MonadState,
@@ -54,20 +48,10 @@ import           PureSpace.Common.Lens                              (MonadError,
                                                                      throwing,
                                                                      (.=))
 import           PureSpace.Common.Prelude
+import           PureSpace.Common.Resource
 
 shadersPath :: String
 shadersPath = "./shaders"
-
-loadShaderSource :: (MonadIO m,
-                     MonadError e m,
-                     AsShaderError e)
-                 => FilePath
-                 -> m BS.ByteString
-loadShaderSource shaderPath = do
-  fileExists <- liftIO $ doesFileExist shaderPath
-  bool fileExists
-    (liftIO $ BS.readFile shaderPath)
-    (throwing shaderFileNotFound shaderPath)
 
 createAndCompileShader :: (MonadIO m,
                            MonadError e m,
@@ -91,10 +75,11 @@ createAndCompileShader st src = do
 loadGameShaders :: (MonadIO m,
                     MonadError e m,
                     MonadState s m,
+                    AsResourceError e,
                     HasShaderState s,
                     AsShaderError e)
                 => [(ShaderType, FilePath)] -> m ()
 loadGameShaders shaders = do
-  sources         <- (traverse . traverse) loadShaderSource shaders
+  sources         <- (traverse . traverse) (loadResource BS.readFile) shaders
   compiledShaders <- traverse (uncurry createAndCompileShader) sources
   shaderListState .= compiledShaders

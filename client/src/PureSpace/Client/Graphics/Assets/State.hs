@@ -17,32 +17,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Game.State
+module PureSpace.Client.Graphics.Assets.State
   (
-    GameState (..),
-    GraphicsState (..),
-    ShaderProgramState (..),
-    ShaderState (..),
-    initialGameState
   )
   where
 
-import           PureSpace.Client.Graphics.State
-import           PureSpace.Common.Lens           (lens)
-
-newtype GameState = GameState GraphicsState
-
-instance HasGraphicsState GameState where
-  graphicsState =
-    let f (GameState x)   = x
-        g (GameState _) x = GameState x
-    in lens f g
-
-instance HasShaderState GameState where
-  shaderState = graphicsState . shaderState
-
-instance HasShaderProgramState GameState where
-  shaderProgramState = graphicsState . shaderProgramState
-
-initialGameState :: GameState
-initialGameState = GameState initialGraphicsState
+import           PureSpace.Common.Lens (Lens', lens)

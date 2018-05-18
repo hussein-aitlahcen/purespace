@@ -30,8 +30,8 @@ module PureSpace.Common.Prelude
   )
   where
 
-import           Control.Arrow  (Kleisli (..), (&&&), (***))
-import           Data.Foldable  (traverse_)
+import           Control.Arrow          (Kleisli (..), (&&&), (***))
+import           Data.Foldable          (traverse_)
 import           Data.Semigroup
 
 safeHead :: [a] -> Maybe a

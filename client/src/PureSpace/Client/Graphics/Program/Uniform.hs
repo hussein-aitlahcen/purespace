@@ -17,8 +17,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Graphics.Shader.Program.Uniform
+module PureSpace.Client.Graphics.Program.Uniform
   (
+    AsUniform (..),
     uniform
   )
   where

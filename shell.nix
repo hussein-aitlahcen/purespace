@@ -17,7 +17,7 @@ let
         libraryHaskellDepends = [ base directory lens mtl stm ];
         executableHaskellDepends = [
           aeson base bytestring GLUT GLUtil JuicyPixels linear OpenGL
-          OpenGLRaw vector
+          OpenGLRaw stm vector
         ];
         testHaskellDepends = [ base ];
         homepage = "http://github.com/hussein-aitlahcen/purespace";

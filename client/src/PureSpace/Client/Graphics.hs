@@ -19,22 +19,20 @@
 
 module PureSpace.Client.Graphics
   (
-    module PureSpace.Client.Graphics.Matrix,
-    module PureSpace.Client.Graphics.Shader,
-    module PureSpace.Client.Graphics.Shader.Program,
+    module PureSpace.Client.Graphics.Maths,
+    module PureSpace.Client.Graphics.Program,
     module PureSpace.Client.Graphics.Error,
     module PureSpace.Client.Graphics.State,
-    module PureSpace.Client.Graphics.Buffer,
-    module PureSpace.Client.Graphics.Texture,
-    module PureSpace.Client.Graphics.Shader.Program.Uniform
+    module PureSpace.Client.Graphics.Memory,
+    module PureSpace.Client.Graphics.Device,
+    module PureSpace.Client.Graphics.Assets,
   )
   where
 
-import           PureSpace.Client.Graphics.Buffer
+import           PureSpace.Client.Graphics.Assets
+import           PureSpace.Client.Graphics.Device
 import           PureSpace.Client.Graphics.Error
-import           PureSpace.Client.Graphics.Matrix
-import           PureSpace.Client.Graphics.Shader
-import           PureSpace.Client.Graphics.Shader.Program
-import           PureSpace.Client.Graphics.Shader.Program.Uniform
+import           PureSpace.Client.Graphics.Maths
+import           PureSpace.Client.Graphics.Memory
+import           PureSpace.Client.Graphics.Program
 import           PureSpace.Client.Graphics.State
-import           PureSpace.Client.Graphics.Texture

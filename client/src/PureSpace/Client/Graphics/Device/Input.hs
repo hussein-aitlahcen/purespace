@@ -1,4 +1,4 @@
--- State.hs ---
+-- Input.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,32 +17,27 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Game.State
+module PureSpace.Client.Graphics.Device.Input
   (
-    GameState (..),
-    GraphicsState (..),
-    ShaderProgramState (..),
-    ShaderState (..),
-    initialGameState
+    InputEvent (..),
+    TChan,
+    InputStream,
+    Key (..),
+    KeyState (..),
+    Modifiers (..),
+    Position,
+    inputStream,
   )
   where
 
-import           PureSpace.Client.Graphics.State
-import           PureSpace.Common.Lens           (lens)
+import           Graphics.UI.GLUT            (Key (..), KeyState (..),
+                                              KeyboardMouseCallback,
+                                              Modifiers (..), Position (..))
+import           PureSpace.Common.Concurrent
 
-newtype GameState = GameState GraphicsState
+type InputStream = TChan InputEvent
 
-instance HasGraphicsState GameState where
-  graphicsState =
-    let f (GameState x)   = x
-        g (GameState _) x = GameState x
-    in lens f g
+data InputEvent = InputEvent Key KeyState Modifiers Position deriving Show
 
-instance HasShaderState GameState where
-  shaderState = graphicsState . shaderState
-
-instance HasShaderProgramState GameState where
-  shaderProgramState = graphicsState . shaderProgramState
-
-initialGameState :: GameState
-initialGameState = GameState initialGraphicsState
+inputStream :: TChan InputEvent -> KeyboardMouseCallback
+inputStream c k ks m p = atomically $ writeTChan c $ InputEvent k ks m p

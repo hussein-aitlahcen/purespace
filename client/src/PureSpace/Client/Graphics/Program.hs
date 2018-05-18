@@ -19,21 +19,16 @@
 
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module PureSpace.Client.Graphics.Shader.Program
+module PureSpace.Client.Graphics.Program
   (
+    module PureSpace.Client.Graphics.Program.Shader,
+    module PureSpace.Client.Graphics.Program.Uniform,
     Program,
     ShaderProgramState (..),
     HasShaderProgramState (..),
     ShaderProgramError (..),
     AsShaderProgramError (..),
-    Shader,
-    ShaderState,
-    HasShaderState (..),
-    ShaderType (..),
-    ShaderError (..),
-    AsShaderError (..),
     loadGameShaderProgram,
-    shadersPath
   )
   where
 
@@ -44,18 +39,10 @@ import           Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects (Program, a
                                                                       programInfoLog,
                                                                       validateProgram,
                                                                       validateStatus)
-import           PureSpace.Client.Graphics.Shader                    (AsShaderError (..),
-                                                                      HasShaderState (..),
-                                                                      Shader,
-                                                                      ShaderError (..),
-                                                                      ShaderState,
-                                                                      ShaderType (..),
-                                                                      loadGameShaders,
-                                                                      shadersPath)
-import           PureSpace.Client.Graphics.Shader.Program.Error      (AsShaderProgramError (..),
-                                                                      ShaderProgramError (..))
-import           PureSpace.Client.Graphics.Shader.Program.State      (HasShaderProgramState (..),
-                                                                      ShaderProgramState (..))
+import           PureSpace.Client.Graphics.Program.Error
+import           PureSpace.Client.Graphics.Program.Shader
+import           PureSpace.Client.Graphics.Program.State
+import           PureSpace.Client.Graphics.Program.Uniform
 import           PureSpace.Common.Lens                               (MonadError,
                                                                       MonadIO,
                                                                       MonadState,
@@ -67,6 +54,7 @@ import           PureSpace.Common.Prelude
 loadGameShaderProgram :: (MonadIO m,
                           MonadError e m,
                           MonadState s m,
+                          AsResourceError e,
                           HasShaderState s,
                           HasShaderProgramState s,
                           AsShaderError e,
@@ -74,7 +62,6 @@ loadGameShaderProgram :: (MonadIO m,
                       => [(ShaderType, FilePath)] -> m Program
 loadGameShaderProgram s = do
   loadGameShaders s
-  -- TODO: ugly but required
   shaders <- pure . fmap snd =<< use shaderListState
   program <- liftIO createProgram
   traverse_ (liftIO . attachShader program) shaders
