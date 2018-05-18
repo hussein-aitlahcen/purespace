@@ -19,47 +19,30 @@
 
 module PureSpace.Client.Graphics.Buffer
   (
-    createVBO,
-    createVAO,
+    spriteVAO
   )
   where
 
-import           Data.Vector.Storable   (fromList, unsafeWith)
-import           Foreign.Storable       (Storable (..), sizeOf)
-import           Graphics.GLUtil        (offset0)
-import           Graphics.UI.GLUT       (AttribLocation (..), BufferObject,
-                                         BufferTarget (..), BufferUsage (..),
-                                         Capability (..), DataType (..),
-                                         GLfloat, IntegerHandling (..),
-                                         NumComponents,
-                                         VertexArrayDescriptor (..),
-                                         VertexArrayObject, bindBuffer,
-                                         bindVertexArrayObject, bufferData,
-                                         genObjectName, vertexAttribArray,
-                                         vertexAttribPointer, ($=))
-import           PureSpace.Common.Monad (MonadIO, liftIO)
+import           Graphics.GLUtil               (offset0, makeBuffer, makeVAO)
+import           Graphics.UI.GLUT              (AttribLocation (..),
+                                                BufferTarget (..),
+                                                Capability (..), DataType (..),
+                                                GLfloat, IntegerHandling (..),
+                                                NumComponents,
+                                                VertexArrayDescriptor (..),
+                                                VertexArrayObject, bindBuffer,
+                                                vertexAttribArray,
+                                                vertexAttribPointer, ($=))
+import           PureSpace.Common.Monad        (MonadIO, liftIO)
 
 vaoComponents :: NumComponents
 vaoComponents = 4
 
-createVBO :: MonadIO m => [GLfloat] -> m (BufferObject, VertexArrayObject)
-createVBO vertices  = do
-  vertexBuffer <- genObjectName
-  bindBuffer ArrayBuffer $= Just vertexBuffer
-  let vector = fromList vertices
-  liftIO $ unsafeWith vector $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize, ptr, StaticDraw)
-  vertexArray <- createVAO vaoComponents
-  bindBuffer ArrayBuffer                 $= Nothing
-  pure (vertexBuffer, vertexArray)
-  where
-    bufferSize = toEnum $ length vertices * sizeOf (head vertices)
-
-createVAO :: MonadIO m => NumComponents -> m VertexArrayObject
-createVAO numComponents = do
-  vertexArray  <- genObjectName
-  bindVertexArrayObject                  $= Just vertexArray
-  vertexAttribArray   (AttribLocation 0) $= Enabled
-  vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor numComponents Float 0 offset0)
-  bindVertexArrayObject                  $= Nothing
-  pure vertexArray
+spriteVAO :: MonadIO m => [GLfloat] -> m VertexArrayObject
+spriteVAO vertices = liftIO $ makeVAO $
+    do buffer <- makeBuffer ArrayBuffer vertices
+       bindBuffer ArrayBuffer $= Just buffer
+       let attrib0 = AttribLocation 0
+       vertexAttribArray  attrib0 $= Enabled
+       vertexAttribPointer attrib0 $= (ToFloat, VertexArrayDescriptor vaoComponents Float 0 offset0)
+       bindBuffer ArrayBuffer $= Nothing
