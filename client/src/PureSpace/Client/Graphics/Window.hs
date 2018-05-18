@@ -28,6 +28,7 @@ module PureSpace.Client.Graphics.Window
 import           Graphics.GLUtil.BufferObjects (makeBuffer)
 import           Graphics.UI.GLUT              as GLUT hiding (ortho2D, rotate,
                                                         translate, uniform)
+import qualified Data.Map                        as M
 import           PureSpace.Client.Graphics
 import           PureSpace.Common.Concurrent
 import           PureSpace.Common.Lens
@@ -38,6 +39,9 @@ import           PureSpace.Common.Prelude
 Everything under this line is complete garbage atm
 ############################
 -}
+
+type SpriteName = String
+type SpritesByName = M.Map SpriteName GraphicsSprite
 
 data GraphicsSprite = GraphicsSprite Sprite VertexArrayObject deriving Show
 
@@ -105,7 +109,7 @@ initContext :: (MonadIO m,
                 AsShaderError e,
                 AsShaderProgramError e)
             => SpriteAtlas
-            -> m (Program, [GraphicsSprite])
+            -> m (Program, SpritesByName)
 initContext (SpriteAtlas image sprites) = do
   liftIO $ putStrLn "initialize"
   program <- loadGameShaderProgram [(VertexShader  , shadersPath <> "/sprite.vert")
@@ -122,11 +126,17 @@ initContext (SpriteAtlas image sprites) = do
   graphicsSprites <- traverse (uncurry (createGraphicsSprite buffer)) (enumerate sprites)
   currentProgram           $= Just program
   textureBinding Texture2D $= Just text
-  pure (program, graphicsSprites)
+  let spriteMap = buildSpriteMap graphicsSprites
+  pure (program, spriteMap)
 
 initVertices :: Int -> Int -> Sprite -> [GLfloat]
 initVertices textW textH (Sprite _ x y w h) =
   spriteVertices x y w h textW textH
+
+buildSpriteMap :: [GraphicsSprite]-> SpritesByName
+buildSpriteMap =
+  let namedTuple g@(GraphicsSprite (Sprite name _ _ _ _) _) = (name, g)
+  in M.fromList . fmap namedTuple
 
 createGraphicsSprite :: MonadIO m => BufferObject -> Int -> Sprite -> m GraphicsSprite
 createGraphicsSprite buffer i sprite =
@@ -134,22 +144,27 @@ createGraphicsSprite buffer i sprite =
   <*> pure sprite
   <*> spriteVAO buffer i
 
-display :: Program -> [GraphicsSprite] -> DisplayCallback
+display :: Program -> SpritesByName -> DisplayCallback
 display program sprites = do
   Size w h          <- GLUT.get windowSize
   time              <- elapsedTime
   clear [ColorBuffer, DepthBuffer]
-  traverse_ (displaySprite (projection w h) time) sprites
+  let orangeShip = "playerShip3_orange.png" `vaoByName` sprites
+  maybe (pure ()) (displaySprite (projection w h) time) orangeShip
   swapBuffers
   postRedisplay Nothing
   where
     uniformP      = uniform program
     projection    = ortho2D 1
     modelView t = rotate (fromIntegral t / 360) identity
-    displaySprite proj time (GraphicsSprite (Sprite "playerShip3_blue.png" _ _ _ _) vao) = do
+    displaySprite proj time vao = do
       uniformP "mProjection"  proj
       uniformP "mModelView" $ modelView time
       bindVertexArrayObject $= Just vao
       spriteDraw
       bindVertexArrayObject $= Nothing
-    displaySprite _ _ _ = pure ()
+
+vaoByName :: SpriteName-> SpritesByName -> Maybe VertexArrayObject
+vaoByName name sprites =
+  let vao (GraphicsSprite _ v) = v
+  in fmap vao $ name `M.lookup` sprites
