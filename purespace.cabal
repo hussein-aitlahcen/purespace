@@ -82,16 +82,18 @@ executable purespace-client
   ghc-options:         -Wall
   build-depends:       purespace
                      , base >=4.10 && <4.11
-                     , OpenGLRaw
-                     , OpenGL
+                     , aeson
+                     , bytestring
+                     , containers
                      , GLUT
                      , GLUtil
                      , JuicyPixels
-                     , aeson
-                     , vector
-                     , bytestring
                      , linear
+                     , OpenGLRaw
+                     , OpenGL
                      , stm
+                     , vector
+
 test-suite purespace-client-test
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
