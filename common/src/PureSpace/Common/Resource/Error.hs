@@ -33,6 +33,7 @@ newtype ResourceError = ResourceFileNotFound FilePath deriving Show
 class AsResourceError s where
   resourceError        :: Prism' s ResourceError
   resourceFileNotFound :: Prism' s FilePath
+  resourceFileNotFound = resourceError . resourceFileNotFound
 
 instance AsResourceError ResourceError where
   resourceError = id
