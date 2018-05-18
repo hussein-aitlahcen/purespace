@@ -27,7 +27,8 @@ module PureSpace.Client.Graphics.Program.Shader.State
   )
   where
 
-import           Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects (Shader, ShaderType)
+import           Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects (Shader,
+                                                                     ShaderType)
 import           PureSpace.Common.Lens                              (Lens',
                                                                      lens)
 type ShaderEntry    = (ShaderType, Shader)
