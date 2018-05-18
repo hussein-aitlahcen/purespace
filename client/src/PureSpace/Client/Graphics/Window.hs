@@ -25,6 +25,7 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
+import           Control.Concurrent              (threadDelay)
 import           Data.List                       as L
 import           Graphics.GLUtil.BufferObjects   (makeBuffer)
 import           Graphics.UI.GLUT                as GLUT hiding (ortho2D,
@@ -43,6 +44,9 @@ data GraphicsSprite = GraphicsSprite Sprite VertexArrayObject deriving Show
 
 openGLVersion :: (Int, Int)
 openGLVersion = (3, 3)
+
+fps :: Int
+fps = 120
 
 createGameWindow :: (MonadIO m,
                      MonadState s m,
@@ -63,7 +67,15 @@ createGameWindow = do
   let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) _) -> name == "playerShip3_orange.png") sprites
   displayCallback $= display program text ship
   idleCallback    $= Just (postRedisplay (Just window))
-  mainLoop
+  windowLoop
+
+windowLoop :: MonadIO m => m ()
+windowLoop = mainLoopEvent *> delayLoop *> windowLoop
+  where
+    delayLoop =
+      let microsecond = 1000000 :: Float
+          step = round $ microsecond / fromIntegral fps
+      in liftIO $ threadDelay step
 
 initContext :: (MonadIO m,
                 MonadState s m,
@@ -115,5 +127,6 @@ display program text (GraphicsSprite _ vao) = do
   bindVertexArrayObject $= Nothing
   currentProgram        $= Nothing
   swapBuffers
+  postRedisplay Nothing
   where
     uniformP = uniform program
