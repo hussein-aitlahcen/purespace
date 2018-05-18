@@ -19,30 +19,74 @@
 
 module PureSpace.Client.Graphics.Buffer
   (
-    spriteVAO
+    spriteVAO,
+    spriteVertices
   )
   where
 
-import           Graphics.GLUtil               (offset0, makeBuffer, makeVAO)
-import           Graphics.UI.GLUT              (AttribLocation (..),
-                                                BufferTarget (..),
-                                                Capability (..), DataType (..),
-                                                GLfloat, IntegerHandling (..),
-                                                NumComponents,
-                                                VertexArrayDescriptor (..),
-                                                VertexArrayObject, bindBuffer,
-                                                vertexAttribArray,
-                                                vertexAttribPointer, ($=))
-import           PureSpace.Common.Monad        (MonadIO, liftIO)
+import           Foreign.Storable                  (sizeOf)
+import           Graphics.GLUtil                   (makeVAO, offsetPtr)
+import           Graphics.UI.GLUT                  (AttribLocation (..),
+                                                    BufferObject,
+                                                    BufferTarget (..),
+                                                    Capability (..),
+                                                    DataType (..), GLfloat,
+                                                    IntegerHandling (..),
+                                                    NumComponents,
+                                                    VertexArrayDescriptor (..),
+                                                    VertexArrayObject,
+                                                    bindBuffer,
+                                                    vertexAttribArray,
+                                                    vertexAttribPointer, ($=))
+import           PureSpace.Common.Monad            (MonadIO, liftIO)
 
-vaoComponents :: NumComponents
-vaoComponents = 4
+-- vec4, defined by spriteVertices
+spriteComponents :: NumComponents
+spriteComponents = 4
 
-spriteVAO :: MonadIO m => [GLfloat] -> m VertexArrayObject
-spriteVAO vertices = liftIO $ makeVAO $
-    do buffer <- makeBuffer ArrayBuffer vertices
-       bindBuffer ArrayBuffer $= Just buffer
-       let attrib0 = AttribLocation 0
-       vertexAttribArray  attrib0 $= Enabled
-       vertexAttribPointer attrib0 $= (ToFloat, VertexArrayDescriptor vaoComponents Float 0 offset0)
-       bindBuffer ArrayBuffer $= Nothing
+-- 2 triangles => 6 vertices
+spriteVerticeNumber :: Int
+spriteVerticeNumber = 6
+
+spriteVertices :: Integral a => a -> a -> a -> a -> a -> a -> [GLfloat]
+spriteVertices x y w h textW textH = triangles
+  where
+    -- UV coords (normalized with texture dimension)
+    norm a b = fromIntegral a / fromIntegral b
+    nX = norm x textW
+    nY = norm y textH
+    nW = norm w textW
+    nH = norm h textH
+    triangles =
+      [
+        -- vertexX, vertexY, textureX, textureY,
+        -- interpreted as vec4 by the vertex shader
+        -- bottom left triangle
+        -nW/2,  nH/2, nX, nY,
+         nW/2,  nH/2, nX + nW, nY,
+         nW/2, -nH/2, nX + nW, nY + nH,
+
+        -- top right triangle
+        -nW/2,  nH/2, nX, nY,
+         nW/2, -nH/2, nX + nW, nY + nH,
+        -nW/2, -nH/2, nX, nY + nH
+      ]
+
+spriteVAO :: MonadIO m => BufferObject -> Int -> m VertexArrayObject
+spriteVAO buffer = createVAO buffer spriteComponents spriteVerticeNumber
+
+createVAO :: MonadIO m => BufferObject -> NumComponents -> Int -> Int -> m VertexArrayObject
+createVAO buffer components nbOfVertices index = liftIO $ makeVAO $
+    do bindBuffer ArrayBuffer      $= Just buffer
+       vertexAttribArray   attrib0 $= Enabled
+       vertexAttribPointer attrib0 $= (ToFloat, VertexArrayDescriptor components Float stride offset)
+       bindBuffer ArrayBuffer      $= Nothing
+    where
+      stride        = 0
+      attrib0       = AttribLocation 0
+      offset        =
+        let verticeSize = fromIntegral components * componentSize
+        in offsetPtr (nbOfVertices * verticeSize * index)
+      -- ugly but required
+      componentSize = sizeOf (undefined::GLfloat)
+

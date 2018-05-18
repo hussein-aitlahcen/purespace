@@ -25,7 +25,8 @@ module PureSpace.Common.Prelude
     traverse_,
     (&&&),
     (***),
-    Kleisli (..)
+    Kleisli (..),
+    enumerate
   )
   where
 
@@ -39,3 +40,6 @@ safeHead (x:_) = Just x
 
 bool :: Bool -> a -> a -> a
 bool cond true false = if cond then true else false
+
+enumerate :: [a] -> [(Int, a)]
+enumerate = zip [0..]

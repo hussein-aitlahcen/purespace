@@ -26,6 +26,7 @@ module PureSpace.Client.Graphics.Window
   where
 
 import           Data.List                       as L
+import           Graphics.GLUtil.BufferObjects   (makeBuffer)
 import           Graphics.UI.GLUT                as GLUT hiding (ortho2D,
                                                           rotate, uniform)
 import           PureSpace.Client.Assets.Sprites
@@ -59,7 +60,7 @@ createGameWindow = do
   (_, _)                   <- getArgsAndInitialize
   window                   <- createWindow "PureSpace"
   (text, sprites, program) <- initContext atlas
-  let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) _) -> name == "playerShip1_blue.png") sprites
+  let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) _) -> name == "playerShip3_orange.png") sprites
   displayCallback $= display program text ship
   idleCallback    $= Just (postRedisplay (Just window))
   mainLoop
@@ -84,33 +85,21 @@ initContext (SpriteAtlas image sprites) = do
   sampleAlphaToCoverage       $= Enabled
   depthBounds                 $= Nothing
   depthFunc                   $= Nothing
-  (SpriteTexture w h text) <- createTexture image
-  graphicsSprites          <- traverse (initSpriteBuffer w h) sprites
+  (SpriteTexture textW textH text) <- createTexture image
+  let vertices = initVertices textW textH =<< sprites
+  buffer          <- liftIO $ makeBuffer ArrayBuffer vertices
+  graphicsSprites <- traverse (uncurry (createGraphicsSprite buffer)) (enumerate sprites)
   pure (text, graphicsSprites, program)
 
-initSpriteBuffer :: MonadIO m => Int -> Int -> Sprite -> m GraphicsSprite
-initSpriteBuffer imgW imgH sprite@(Sprite _ x y w h) =
+initVertices :: Int -> Int -> Sprite -> [GLfloat]
+initVertices textW textH (Sprite _ x y w h) =
+  spriteVertices x y w h textW textH
+
+createGraphicsSprite :: MonadIO m => BufferObject -> Int -> Sprite -> m GraphicsSprite
+createGraphicsSprite buffer i sprite =
   pure GraphicsSprite
   <*> pure sprite
-  <*> spriteVAO triangles
-  where
-    norm a b = fromIntegral a / fromIntegral b
-    nX = norm x imgW
-    nY = norm y imgH
-    nW = norm w imgW
-    nH = norm h imgH
-    triangles =
-      [
-        -- vertexX, vertexY, textureX, textureY,
-        -- interpreted as vec4 by the vertex shader
-        -nW/2,  nH/2, nX, nY,
-         nW/2,  nH/2, nX + nW, nY,
-         nW/2, -nH/2, nX + nW, nY + nH,
-
-        -nW/2,  nH/2, nX, nY,
-         nW/2, -nH/2, nX + nW, nY + nH,
-        -nW/2, -nH/2, nX, nY + nH
-      ]
+  <*> spriteVAO buffer i
 
 display :: Program -> TextureObject -> GraphicsSprite -> DisplayCallback
 display program text (GraphicsSprite _ vao) = do
