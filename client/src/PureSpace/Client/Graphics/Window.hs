@@ -73,7 +73,7 @@ createGameWindow = do
   inputChan     <- liftIO $ atomically newBroadcastTChan
   keyboardMouseCallback $= Just (inputStream inputChan)
   readInputChan <- liftIO $ atomically $ dupTChan inputChan
-  liftIO $ forkIO $ loop readInputChan
+  _             <- liftIO $ forkIO $ loop readInputChan
   windowLoop
   where
     loop c = do
