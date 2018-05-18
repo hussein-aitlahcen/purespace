@@ -38,7 +38,7 @@ Everything under this line is complete garbage atm
 ############################
 -}
 
-data GraphicsSprite = GraphicsSprite Sprite (BufferObject, VertexArrayObject) deriving Show
+data GraphicsSprite = GraphicsSprite Sprite VertexArrayObject deriving Show
 
 openGLVersion :: (Int, Int)
 openGLVersion = (3, 3)
@@ -59,7 +59,7 @@ createGameWindow = do
   (_, _)                   <- getArgsAndInitialize
   window                   <- createWindow "PureSpace"
   (text, sprites, program) <- initContext atlas
-  let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) (_, _)) -> name == "playerShip1_blue.png") sprites
+  let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) _) -> name == "playerShip1_blue.png") sprites
   displayCallback $= display program text ship
   idleCallback    $= Just (postRedisplay (Just window))
   mainLoop
@@ -92,7 +92,7 @@ initSpriteBuffer :: MonadIO m => Int -> Int -> Sprite -> m GraphicsSprite
 initSpriteBuffer imgW imgH sprite@(Sprite _ x y w h) =
   pure GraphicsSprite
   <*> pure sprite
-  <*> createVBO triangles
+  <*> spriteVAO triangles
   where
     norm a b = fromIntegral a / fromIntegral b
     nX = norm x imgW
@@ -113,7 +113,7 @@ initSpriteBuffer imgW imgH sprite@(Sprite _ x y w h) =
       ]
 
 display :: Program -> TextureObject -> GraphicsSprite -> DisplayCallback
-display program text (GraphicsSprite _ (_, vao)) = do
+display program text (GraphicsSprite _ vao) = do
   Size width height <- GLUT.get windowSize
   clear [ColorBuffer, DepthBuffer]
   time <- elapsedTime
