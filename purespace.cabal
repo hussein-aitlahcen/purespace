@@ -53,7 +53,6 @@ library
 executable purespace-client
   main-is:             Main.hs
   other-modules:       PureSpace.Client.Graphics.Assets
-                     , PureSpace.Client.Graphics.Assets.State
                      , PureSpace.Client.Graphics.Assets.Error
                      , PureSpace.Client.Graphics.Program.Shader
                      , PureSpace.Client.Graphics.Program.Shader.Error
