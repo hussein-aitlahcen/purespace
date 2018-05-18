@@ -21,6 +21,7 @@
 
 module PureSpace.Client.Graphics.Memory.Texture
   (
+    module PureSpace.Client.Graphics.Error,
     SpriteTexture (..),
     createTexture
   )
@@ -43,7 +44,7 @@ import           Graphics.UI.GLUT                (Clamping (..), DataType (..),
                                                   generateMipmap', texImage2D,
                                                   textureBinding, textureFilter,
                                                   textureWrapMode, ($=))
-import           PureSpace.Client.Graphics.Error (AsGraphicsError (..))
+import           PureSpace.Client.Graphics.Error
 import           PureSpace.Common.Lens           (MonadError, MonadIO, liftIO,
                                                   throwing)
 
@@ -51,6 +52,7 @@ data SpriteTexture = SpriteTexture Int Int TextureObject
 
 createTexture :: (MonadIO m,
                   MonadError e m,
+                  AsResourceError e,
                   AsGraphicsError e)
               => FilePath
               -> m SpriteTexture
@@ -58,6 +60,7 @@ createTexture image = do
   img <- liftIO $ readImage image
   case img of
     (Right (ImageRGBA8 (Image w h pixels))) -> pure (SpriteTexture w h) <*> go w h pixels
+    (Left _)                                -> throwing resourceFileNotFound image
     _                                       -> throwing graphicsTextureError image
   where
     go h w pixels = do
