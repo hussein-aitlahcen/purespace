@@ -4,9 +4,9 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, aeson, base, bytestring, directory, GLUT
-      , GLUtil, JuicyPixels, lens, linear, mtl, OpenGL, OpenGLRaw, stdenv
-      , stm, vector
+  f = { mkDerivation, aeson, base, bytestring, containers
+      , directory, GLUT, GLUtil, JuicyPixels, lens, linear, mtl, OpenGL
+      , OpenGLRaw, stdenv, stm, vector
       }:
       mkDerivation {
         pname = "purespace";
@@ -14,10 +14,10 @@ let
         src = ./.;
         isLibrary = true;
         isExecutable = true;
-        libraryHaskellDepends = [ base directory lens mtl stm ];
+        libraryHaskellDepends = [ base directory lens linear mtl stm ];
         executableHaskellDepends = [
-          aeson base bytestring GLUT GLUtil JuicyPixels linear OpenGL
-          OpenGLRaw stm vector
+          aeson base bytestring containers GLUT GLUtil JuicyPixels linear
+          OpenGL OpenGLRaw stm vector
         ];
         testHaskellDepends = [ base ];
         homepage = "http://github.com/hussein-aitlahcen/purespace";

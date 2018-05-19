@@ -41,6 +41,13 @@ library
                      , PureSpace.Common.Files
                      , PureSpace.Common.Resource
                      , PureSpace.Common.Resource.Error
+                     , PureSpace.Common.Game.Types
+                     , PureSpace.Common.Game.Action
+                     , PureSpace.Common.Game.Collision
+                     , PureSpace.Common.Game.FSM
+                     , PureSpace.Common.Game.Ship.Types
+                     , PureSpace.Common.Game.Projectile.Types
+                     , PureSpace.Common.Game.Projectile.Damage
   hs-source-dirs:      common/src/
   default-language:    Haskell2010
   ghc-options:         -Wall
@@ -49,6 +56,7 @@ library
                      , mtl 
                      , stm
                      , directory
+                     , linear
 
 executable purespace-client
   main-is:             Main.hs
