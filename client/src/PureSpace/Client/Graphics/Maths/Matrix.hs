@@ -19,40 +19,46 @@
 
 module PureSpace.Client.Graphics.Maths.Matrix
   (
-    (L.!*!),
-    (L.!+!),
-    L.translation,
     Matrix,
-    identity,
-    rotate,
-    translate,
+    PureSpace.Client.Graphics.Maths.Matrix.identity,
+    rotate2D,
+    translate2D,
+    scale2D,
     ortho2D
   )
   where
 
 import           Graphics.Rendering.OpenGL.GL (GLfloat)
-import qualified Linear                       as L
-import PureSpace.Common.Lens
+import           Linear                       (M44, V3 (..), V4 (..), axisAngle,
+                                               fromQuaternion, identity,
+                                               m33_to_m44, ortho, scaled,
+                                               translation, (!*!))
+import           PureSpace.Common.Lens        ((&), (+~))
 
-type Matrix = L.M44 GLfloat
+-- 2D transformations
+
+type Matrix = M44 GLfloat
 
 identity :: Matrix
-identity = L.identity
+identity = Linear.identity
 
-translate :: GLfloat -> GLfloat -> Matrix -> Matrix
-translate x y m = m & L.translation +~ L.V3 x y 0
+translate2D :: GLfloat -> GLfloat -> Matrix -> Matrix
+translate2D x y m = m & translation +~ V3 x y 0
 
-rotate :: GLfloat -> Matrix -> Matrix
-rotate angle matrix = matrix L.!*! rotationMatrix
+scale2D :: GLfloat -> Matrix -> Matrix
+scale2D s = (!*!) (scaled (V4 s s 1 1))
+
+rotate2D :: GLfloat -> Matrix -> Matrix
+rotate2D angle matrix = matrix !*! rotationMatrix
   where
-    rotationMatrix = L.m33_to_m44
-                     $ L.fromQuaternion
-                     $ L.axisAngle (L.V3 0 0 1) angle
+    rotationMatrix = m33_to_m44
+                     $ fromQuaternion
+                     $ axisAngle (V3 0 0 1) angle
 
 ortho2D :: Integral a => a -> a -> a -> Matrix
 ortho2D va w h
-  | w > h     = L.ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               near far
-  | otherwise = L.ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) near far
+  | w > h     = ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               near far
+  | otherwise = ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) near far
   where
     visibleArea = fromIntegral va
     aspectRatio = fromIntegral w / fromIntegral h

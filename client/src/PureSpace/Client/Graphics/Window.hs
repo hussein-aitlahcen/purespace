@@ -25,10 +25,10 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
+import qualified Data.Map                      as M
 import           Graphics.GLUtil.BufferObjects (makeBuffer)
 import           Graphics.UI.GLUT              as GLUT hiding (ortho2D, rotate,
-                                                        translate, uniform)
-import qualified Data.Map                        as M
+                                                        scale, uniform)
 import           PureSpace.Client.Graphics
 import           PureSpace.Common.Concurrent
 import           PureSpace.Common.Lens
@@ -154,11 +154,11 @@ display program sprites = do
   swapBuffers
   postRedisplay Nothing
   where
-    uniformP      = uniform program
-    projection    = ortho2D 1
-    modelView t = rotate (fromIntegral t / 360) identity
+    uniformP    = uniform program
+    projection  = ortho2D 1
+    modelView t = scale2D 0.5 $ rotate2D (fromIntegral t / 360) identity
     displaySprite proj time vao = do
-      uniformP "mProjection"  proj
+      uniformP "mProjection" proj
       uniformP "mModelView" $ modelView time
       bindVertexArrayObject $= Just vao
       spriteDraw
