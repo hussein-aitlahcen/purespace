@@ -20,32 +20,30 @@
 module PureSpace.Client.Graphics.Memory.Buffer
   (
     spriteVAO,
-    spriteVertices
+    spriteVertices,
+    spriteDraw
   )
   where
 
-import           Foreign.Storable                  (sizeOf)
-import           Graphics.GLUtil                   (makeVAO, offsetPtr)
-import           Graphics.UI.GLUT                  (AttribLocation (..),
-                                                    BufferObject,
-                                                    BufferTarget (..),
-                                                    Capability (..),
-                                                    DataType (..), GLfloat,
-                                                    IntegerHandling (..),
-                                                    NumComponents,
-                                                    VertexArrayDescriptor (..),
-                                                    VertexArrayObject,
-                                                    bindBuffer,
-                                                    vertexAttribArray,
-                                                    vertexAttribPointer, ($=))
-import           PureSpace.Common.Monad            (MonadIO, liftIO)
+import           Foreign.Storable       (sizeOf)
+import           Graphics.GLUtil        (makeVAO, offsetPtr)
+import           Graphics.UI.GLUT       (AttribLocation (..), BufferObject,
+                                         BufferTarget (..), Capability (..),
+                                         DataType (..), GLfloat,
+                                         IntegerHandling (..), NumComponents,
+                                         PrimitiveMode (..),
+                                         VertexArrayDescriptor (..), NumArrayIndices,
+                                         VertexArrayObject, bindBuffer,
+                                         drawArrays, vertexAttribArray,
+                                         vertexAttribPointer, ($=))
+import           PureSpace.Common.Monad (MonadIO, liftIO)
 
 -- vec4, defined by spriteVertices
 spriteComponents :: NumComponents
 spriteComponents = 4
 
 -- 2 triangles => 6 vertices
-spriteVerticeNumber :: Int
+spriteVerticeNumber :: NumArrayIndices
 spriteVerticeNumber = 6
 
 spriteVertices :: Integral a => a -> a -> a -> a -> a -> a -> [GLfloat]
@@ -72,10 +70,13 @@ spriteVertices x y w h textW textH = triangles
         -nW/2, -nH/2, nX, nY + nH
       ]
 
+spriteDraw :: MonadIO m => m ()
+spriteDraw = liftIO $ drawArrays Triangles 0 spriteVerticeNumber
+
 spriteVAO :: MonadIO m => BufferObject -> Int -> m VertexArrayObject
 spriteVAO buffer = createVAO buffer spriteComponents spriteVerticeNumber
 
-createVAO :: MonadIO m => BufferObject -> NumComponents -> Int -> Int -> m VertexArrayObject
+createVAO :: MonadIO m => BufferObject -> NumComponents -> NumArrayIndices -> Int -> m VertexArrayObject
 createVAO buffer components nbOfVertices index = liftIO $ makeVAO $
     do bindBuffer ArrayBuffer      $= Just buffer
        vertexAttribArray   attrib0 $= Enabled
@@ -85,8 +86,8 @@ createVAO buffer components nbOfVertices index = liftIO $ makeVAO $
       stride        = 0
       attrib0       = AttribLocation 0
       offset        =
-        let verticeSize = fromIntegral components * componentSize
-        in offsetPtr (nbOfVertices * verticeSize * index)
+        let verticeSize = components * fromIntegral componentSize
+        in offsetPtr $ fromIntegral (nbOfVertices * verticeSize * fromIntegral index)
       -- ugly but required
       componentSize = sizeOf (undefined::GLfloat)
 

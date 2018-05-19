@@ -146,10 +146,10 @@ display program sprites = do
     uniformP      = uniform program
     projection    = ortho2D 1
     modelView t = rotate (fromIntegral t / 360) identity
-    displaySprite proj time (GraphicsSprite (Sprite "playerShip1_orange.png" _ _ _ _) vao) = do
+    displaySprite proj time (GraphicsSprite (Sprite "playerShip3_blue.png" _ _ _ _) vao) = do
       uniformP "mProjection"  proj
       uniformP "mModelView" $ modelView time
       bindVertexArrayObject $= Just vao
-      drawArrays Triangles 0 6
+      spriteDraw
       bindVertexArrayObject $= Nothing
     displaySprite _ _ _ = pure ()
