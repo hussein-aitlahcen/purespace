@@ -19,10 +19,8 @@
 
 module PureSpace.Client.Game.State
   (
+    module PureSpace.Client.Graphics.State,
     GameState (..),
-    GraphicsState (..),
-    ShaderProgramState (..),
-    ShaderState (..),
     initialGameState
   )
   where
@@ -43,6 +41,9 @@ instance HasShaderState GameState where
 
 instance HasShaderProgramState GameState where
   shaderProgramState = graphicsState . shaderProgramState
+
+instance HasDeviceState GameState where
+  deviceState = graphicsState . deviceState
 
 initialGameState :: GameState
 initialGameState = GameState initialGraphicsState

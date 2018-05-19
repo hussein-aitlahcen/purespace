@@ -19,10 +19,12 @@
 
 module PureSpace.Common.Concurrent
   (
+    module Control.Concurrent,
     module Control.Concurrent.STM,
     module Control.Monad.STM
   )
   where
 
+import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Control.Monad.STM

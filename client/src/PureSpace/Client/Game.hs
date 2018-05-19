@@ -30,17 +30,10 @@ import           PureSpace.Client.Game.Config
 import           PureSpace.Client.Game.Error
 import           PureSpace.Client.Game.State
 import           PureSpace.Client.Graphics.Window
-import           PureSpace.Common.Lens            (evalStateT, runExceptT,
-                                                   runReaderT)
+import           PureSpace.Common.Lens
 
 runGame :: IO (Either GameError ())
-runGame = evalStateT (runReaderT (runExceptT go) config) initialGameState
+runGame = evalStateT (runReaderT (runExceptT createGameWindow) config) initialGameState
   where
     config = GameConfig
-    go = do
-      createGameWindow
-      -- TODO: graphics running, boot network, then game fsm ?
-      pure ()
-
-
 

@@ -25,15 +25,12 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
-import           Control.Concurrent            (forkIO, threadDelay)
-import           Control.Concurrent.STM.TChan
-import           Control.Monad.STM
-import           Data.List                     as L
 import           Graphics.GLUtil.BufferObjects (makeBuffer)
 import           Graphics.UI.GLUT              as GLUT hiding (ortho2D, rotate,
-                                                        uniform)
+                                                        translate, uniform)
 import           PureSpace.Client.Graphics
-import           PureSpace.Common.Monad
+import           PureSpace.Common.Concurrent
+import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
 {-
@@ -54,6 +51,7 @@ createGameWindow :: (MonadIO m,
                      MonadState s m,
                      MonadError e m,
                      AsResourceError e,
+                     HasDeviceState s,
                      HasShaderState s,
                      HasShaderProgramState s,
                      AsGraphicsError e,
@@ -66,21 +64,28 @@ createGameWindow = do
   atlas                    <- loadAssetJSON ("sprite_atlas", spriteSheetPath)
   (_, _)                   <- getArgsAndInitialize
   window                   <- createWindow "PureSpace"
-  (text, sprites, program) <- initContext atlas
-  let (Just ship) = L.find (\(GraphicsSprite (Sprite name _ _ _ _) _) -> name == "playerShip3_orange.png") sprites
-  displayCallback $= display program text ship
+  (program, sprites) <- initContext atlas
+  displayCallback $= display program sprites
   idleCallback    $= Just (postRedisplay (Just window))
-  inputChan     <- liftIO $ atomically newBroadcastTChan
+  loadInputState
+  windowLoop
+
+loadInputState :: (MonadIO m,
+                  MonadState s m,
+                  HasDeviceState s)
+               => m ()
+loadInputState = do
+  inputChan <- liftIO $ atomically newBroadcastTChan
+  deviceInputState .= Just inputChan
   keyboardMouseCallback $= Just (inputStream inputChan)
   readInputChan <- liftIO $ atomically $ dupTChan inputChan
   _             <- liftIO $ forkIO $ loop readInputChan
-  windowLoop
+  pure ()
   where
     loop c = do
       event <- atomically $ readTChan c
       print event
       loop c
-
 
 windowLoop :: MonadIO m => m ()
 windowLoop = mainLoopEvent *> delayLoop *> windowLoop
@@ -100,7 +105,7 @@ initContext :: (MonadIO m,
                 AsShaderError e,
                 AsShaderProgramError e)
             => SpriteAtlas
-            -> m (TextureObject, [GraphicsSprite], Program)
+            -> m (Program, [GraphicsSprite])
 initContext (SpriteAtlas image sprites) = do
   liftIO $ putStrLn "initialize"
   program <- loadGameShaderProgram [(VertexShader  , shadersPath <> "/sprite.vert")
@@ -115,7 +120,9 @@ initContext (SpriteAtlas image sprites) = do
   let vertices = initVertices textW textH =<< sprites
   buffer          <- liftIO $ makeBuffer ArrayBuffer vertices
   graphicsSprites <- traverse (uncurry (createGraphicsSprite buffer)) (enumerate sprites)
-  pure (text, graphicsSprites, program)
+  currentProgram           $= Just program
+  textureBinding Texture2D $= Just text
+  pure (program, graphicsSprites)
 
 initVertices :: Int -> Int -> Sprite -> [GLfloat]
 initVertices textW textH (Sprite _ x y w h) =
@@ -127,22 +134,22 @@ createGraphicsSprite buffer i sprite =
   <*> pure sprite
   <*> spriteVAO buffer i
 
-display :: Program -> TextureObject -> GraphicsSprite -> DisplayCallback
-display program text (GraphicsSprite _ vao) = do
-  Size width height <- GLUT.get windowSize
+display :: Program -> [GraphicsSprite] -> DisplayCallback
+display program sprites = do
+  Size w h          <- GLUT.get windowSize
   time              <- elapsedTime
   clear [ColorBuffer, DepthBuffer]
-  currentProgram           $= Just program
-  textureBinding Texture2D $= Just text
-  uniformP "mProjection" $ projection width height
-  uniformP "mModelView"  $ modelView time
-  bindVertexArrayObject $= Just vao
-  drawArrays Triangles 0 6
-  bindVertexArrayObject $= Nothing
-  currentProgram        $= Nothing
+  traverse_ (displaySprite (projection w h) time) sprites
   swapBuffers
   postRedisplay Nothing
   where
-    uniformP    = uniform program
-    projection  = ortho2D 1
+    uniformP      = uniform program
+    projection    = ortho2D 1
     modelView t = rotate (fromIntegral t / 360) identity
+    displaySprite proj time (GraphicsSprite (Sprite "playerShip1_orange.png" _ _ _ _) vao) = do
+      uniformP "mProjection"  proj
+      uniformP "mModelView" $ modelView time
+      bindVertexArrayObject $= Just vao
+      drawArrays Triangles 0 6
+      bindVertexArrayObject $= Nothing
+    displaySprite _ _ _ = pure ()
