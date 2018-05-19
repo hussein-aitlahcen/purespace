@@ -19,6 +19,8 @@
 
 {-# LANGUAGE LambdaCase #-}
 
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
+
 module PureSpace.Common.Resource.Error
   (
     ResourceError (..),
