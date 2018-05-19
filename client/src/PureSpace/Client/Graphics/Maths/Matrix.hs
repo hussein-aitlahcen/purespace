@@ -19,20 +19,28 @@
 
 module PureSpace.Client.Graphics.Maths.Matrix
   (
+    (L.!*!),
+    (L.!+!),
+    L.translation,
     Matrix,
     identity,
     rotate,
+    translate,
     ortho2D
   )
   where
 
 import           Graphics.Rendering.OpenGL.GL (GLfloat)
 import qualified Linear                       as L
+import PureSpace.Common.Lens
 
 type Matrix = L.M44 GLfloat
 
 identity :: Matrix
 identity = L.identity
+
+translate :: GLfloat -> GLfloat -> Matrix -> Matrix
+translate x y m = m & L.translation +~ L.V3 x y 0
 
 rotate :: GLfloat -> Matrix -> Matrix
 rotate angle matrix = matrix L.!*! rotationMatrix
