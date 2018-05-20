@@ -49,6 +49,10 @@ library
                      , PureSpace.Common.Game.Ship.Types
                      , PureSpace.Common.Game.Projectile.Types
                      , PureSpace.Common.Game.Projectile.Damage
+                     , PureSpace.Common.Game.State.GameState
+                     , PureSpace.Common.Game.State.Player
+                     , PureSpace.Common.Game.State.Types
+                     , PureSpace.Common.Game.Base.Types
   hs-source-dirs:      common/src/
   default-language:    Haskell2010
   ghc-options:         -Wall
