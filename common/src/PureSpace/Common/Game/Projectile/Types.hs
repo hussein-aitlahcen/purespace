@@ -22,8 +22,10 @@ module PureSpace.Common.Game.Projectile.Types
     module PureSpace.Common.Game.Types,
     ProjectileType (..),
     Projectile (..),
+    ProjectileCaracteristics (..),
     HasProjectileType (..),
     HasProjectile (..),
+    HasProjectileCaracteristics (..),
   )
   where
 
@@ -34,31 +36,56 @@ data ProjectileType = Laser
                     | Rocket
                     deriving Show
 
-data Projectile = Projectile ProjectileType Damage MaxVelocity deriving Show
+data Projectile               = Projectile ProjectileCaracteristics Velocity deriving Show
+data ProjectileCaracteristics = ProjectileCaracteristics ProjectileType Damage MaxVelocity deriving Show
 
 class HasProjectile s where
   projectile :: Lens' s Projectile
 
-instance HasProjectile Projectile where
-  projectile = id
+class HasProjectileCaracteristics s where
+  projectileCaracteristics :: Lens' s ProjectileCaracteristics
 
 class HasProjectileType s where
   projectileType :: Lens' s ProjectileType
 
-instance HasProjectileType Projectile where
-  projectileType =
-    let f (Projectile a _ _)   = a
-        g (Projectile _ b c) a = Projectile a b c
+instance HasProjectile Projectile where
+  projectile = id
+
+instance HasProjectileCaracteristics Projectile where
+  projectileCaracteristics =
+    let f (Projectile a _)   = a
+        g (Projectile _ b) a = Projectile a b
     in lens f g
+
+instance HasVelocity Projectile where
+  velocity =
+    let f (Projectile _ b)   = b
+        g (Projectile a _) b = Projectile a b
+    in lens f g
+
+instance HasProjectileType Projectile where
+  projectileType = projectileCaracteristics . projectileType
 
 instance HasDamage Projectile where
-  damage =
-    let f (Projectile _ b _)   = b
-        g (Projectile a _ c) b = Projectile a b c
-    in lens f g
+  damage = projectileCaracteristics . damage
 
 instance HasMaxVelocity Projectile where
+  maxVelocity = projectileCaracteristics . maxVelocity
+
+instance HasProjectileType ProjectileCaracteristics where
+  projectileType =
+    let f (ProjectileCaracteristics a _ _)   = a
+        g (ProjectileCaracteristics _ b c) a = ProjectileCaracteristics a b c
+    in lens f g
+
+instance HasDamage ProjectileCaracteristics where
+  damage =
+    let f (ProjectileCaracteristics _ b _)   = b
+        g (ProjectileCaracteristics a _ c) b = ProjectileCaracteristics a b c
+    in lens f g
+
+instance HasMaxVelocity ProjectileCaracteristics where
   maxVelocity =
-    let f (Projectile _ _ c)   = c
-        g (Projectile a b _) c = Projectile a b c
+    let f (ProjectileCaracteristics _ _ c)   = c
+        g (ProjectileCaracteristics a b _) c = ProjectileCaracteristics a b c
     in lens f g

@@ -24,18 +24,20 @@ module PureSpace.Common.Game.Types
     Velocity,
     MaxVelocity ,
     FireRate,
-    FireCooldown,
     FireRange,
+    FireCooldown,
     Damage,
     Health,
+    MaxHealth,
     HasPosition (..),
     HasVelocity (..),
     HasMaxVelocity (..),
     HasFireRate (..),
-    HasFireCooldown (..),
     HasFireRange (..),
+    HasFireCooldown (..),
     HasDamage (..),
     HasHealth (..),
+    HasMaxHealth (..),
   )
   where
 
@@ -43,8 +45,8 @@ import           Linear
 import           PureSpace.Common.Lens (Lens')
 
 {-
-  FireRate = per second
-  Damage = per projectile
+  FireRate     = per second
+  Damage       = per projectile
   FireCooldown = next available shot
 -}
 
@@ -56,6 +58,7 @@ type FireCooldown = Float
 type FireRange    = Float
 type Damage       = Float
 type Health       = Float
+type MaxHealth    = Float
 
 class HasPosition s where
   position :: Lens' s Position
@@ -69,6 +72,9 @@ class HasMaxVelocity s where
 class HasFireRate s where
   fireRate :: Lens' s FireRate
 
+class HasFireCooldown s where
+  fireCooldown :: Lens' s FireCooldown
+
 class HasFireRange s where
   fireRange :: Lens' s FireRange
 
@@ -78,5 +84,5 @@ class HasDamage s where
 class HasHealth s where
   health :: Lens' s Health
 
-class HasFireCooldown s where
-  fireCooldown :: Lens' s FireCooldown
+class HasMaxHealth s where
+  maxHealth :: Lens' s MaxHealth

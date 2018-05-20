@@ -20,17 +20,16 @@
 module PureSpace.Common.Game.Ship.Types
   (
     module PureSpace.Common.Game.Projectile.Types,
-    module PureSpace.Common.Game.Types,
     ShipType (..),
     Ship (..),
     ShipCaracteristics (..),
+    HasShipType (..),
     HasShip (..),
     HasShipCaracteristics (..),
   )
   where
 
 import           PureSpace.Common.Game.Projectile.Types
-import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Lens                  (Lens', lens)
 
 data ShipType = Fighter
@@ -47,41 +46,104 @@ data ShipType = Fighter
               | Juggernaut
               deriving Show
 
-data Ship               = Ship ShipCaracteristics FireCooldown Position Velocity deriving Show
-data ShipCaracteristics = ShipCaracteristics ShipType Projectile Health FireRate MaxVelocity deriving Show
+data Ship               = Ship ShipCaracteristics Health FireCooldown Position Velocity deriving Show
+data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate FireRange deriving Show
 
 class HasShip s where
   ship :: Lens' s Ship
 
-instance HasShip Ship where
-  ship = id
-
 class HasShipCaracteristics s where
   shipCaracteristics :: Lens' s ShipCaracteristics
 
-instance HasShipCaracteristics ShipCaracteristics where
-  shipCaracteristics = id
+class HasShipType s where
+  shipType :: Lens' s ShipType
+
+instance HasShip Ship where
+  ship = id
 
 instance HasShipCaracteristics Ship where
   shipCaracteristics =
-    let f (Ship a _ _ _)   = a
-        g (Ship _ b c d) a = Ship a b c d
+    let f (Ship a _ _ _ _)   = a
+        g (Ship _ b c d e) a = Ship a b c d e
+    in lens f g
+
+instance HasHealth Ship where
+  health =
+    let f (Ship _ b _ _ _)   = b
+        g (Ship a _ c d e) b = Ship a b c d e
     in lens f g
 
 instance HasFireCooldown Ship where
   fireCooldown =
-    let f (Ship _ b _ _)   = b
-        g (Ship a _ c d) b = Ship a b c d
+    let f (Ship _ _ c _ _)   = c
+        g (Ship a b _ d e) c = Ship a b c d e
     in lens f g
 
 instance HasPosition Ship where
   position =
-    let f (Ship _ _ c _)   = c
-        g (Ship a b _ d) c = Ship a b c d
+    let f (Ship _ _ _ d _)   = d
+        g (Ship a b c _ e) d = Ship a b c d e
     in lens f g
 
 instance HasVelocity Ship where
   velocity =
-    let f (Ship _ _ _ d)   = d
-        g (Ship a b c _) d = Ship a b c d
+    let f (Ship _ _ _ _ e)   = e
+        g (Ship a b c d _) e = Ship a b c d e
+    in lens f g
+
+instance HasShipType Ship where
+  shipType = shipCaracteristics . shipType
+
+instance HasMaxHealth Ship where
+  maxHealth = shipCaracteristics . maxHealth
+
+instance HasMaxVelocity Ship where
+  maxVelocity = shipCaracteristics . maxVelocity
+
+instance HasFireRate Ship where
+  fireRate = shipCaracteristics . fireRate
+
+instance HasFireRange Ship where
+  fireRange = shipCaracteristics . fireRange
+
+instance HasProjectileCaracteristics Ship where
+  projectileCaracteristics = shipCaracteristics . projectileCaracteristics
+
+instance HasShipCaracteristics ShipCaracteristics where
+  shipCaracteristics = id
+
+instance HasShipType ShipCaracteristics where
+  shipType =
+    let f (ShipCaracteristics a _ _ _ _ _)   = a
+        g (ShipCaracteristics _ b c d e f) a = ShipCaracteristics a b c d e f
+    in lens f g
+
+instance HasProjectileCaracteristics ShipCaracteristics where
+  projectileCaracteristics =
+    let f (ShipCaracteristics _ b _ _ _ _)   = b
+        g (ShipCaracteristics a _ c d e f) b = ShipCaracteristics a b c d e f
+    in lens f g
+
+instance HasMaxHealth ShipCaracteristics where
+  maxHealth =
+    let f (ShipCaracteristics _ _ c _ _ _)   = c
+        g (ShipCaracteristics a b _ d e f) c = ShipCaracteristics a b c d e f
+    in lens f g
+
+instance HasMaxVelocity ShipCaracteristics where
+  maxVelocity =
+    let f (ShipCaracteristics _ _ _ d _ _)   = d
+        g (ShipCaracteristics a b c _ e f) d = ShipCaracteristics a b c d e f
+    in lens f g
+
+instance HasFireRate ShipCaracteristics where
+  fireRate =
+    let f (ShipCaracteristics _ _ _ _ e _)   = e
+        g (ShipCaracteristics a b c d _ f) e = ShipCaracteristics a b c d e f
+    in lens f g
+
+instance HasFireRange ShipCaracteristics where
+   fireRange =
+    let f (ShipCaracteristics _ _ _ _ _ f)   = f
+        g (ShipCaracteristics a b c d e _) f = ShipCaracteristics a b c d e f
     in lens f g
