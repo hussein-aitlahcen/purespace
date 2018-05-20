@@ -20,18 +20,18 @@
 module PureSpace.Common.Prelude
   (
     module Data.Semigroup,
+    module Data.Bifunctor,
+    module Data.Maybe,
     safeHead,
     bool,
     traverse_,
-    (&&&),
-    (***),
-    Kleisli (..),
     enumerate
   )
   where
 
-import           Control.Arrow          (Kleisli (..), (&&&), (***))
-import           Data.Foldable          (traverse_)
+import           Data.Bifunctor
+import           Data.Foldable  (traverse_)
+import           Data.Maybe
 import           Data.Semigroup
 
 safeHead :: [a] -> Maybe a

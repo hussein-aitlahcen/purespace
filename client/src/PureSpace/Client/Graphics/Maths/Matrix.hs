@@ -29,10 +29,10 @@ module PureSpace.Client.Graphics.Maths.Matrix
   where
 
 import           Graphics.Rendering.OpenGL.GL (GLfloat)
-import           Linear                       (M44, V3 (..), V4 (..), axisAngle,
-                                               fromQuaternion, identity,
-                                               m33_to_m44, ortho, scaled,
-                                               translation, (!*!))
+import           Linear                       (M44, V2 (..), V3 (..), V4 (..),
+                                               axisAngle, fromQuaternion,
+                                               identity, m33_to_m44, ortho,
+                                               scaled, translation, (!*!))
 import           PureSpace.Common.Lens        ((&), (+~))
 
 -- 2D transformations
@@ -42,18 +42,19 @@ type Matrix = M44 GLfloat
 identity :: Matrix
 identity = Linear.identity
 
-translate2D :: GLfloat -> GLfloat -> Matrix -> Matrix
-translate2D x y m = m & translation +~ V3 x y 0
+translate2D :: V2 Float -> Matrix -> Matrix
+translate2D (V2 x y) m = m & translation +~ V3 x y 0
 
-scale2D :: GLfloat -> Matrix -> Matrix
-scale2D s = (!*!) (scaled (V4 s s 1 1))
+scale2D :: V2 Float -> Matrix -> Matrix
+scale2D (V2 x y) = (!*!) (scaled (V4 x y 1 1))
 
 rotate2D :: GLfloat -> Matrix -> Matrix
-rotate2D angle matrix = matrix !*! rotationMatrix
+rotate2D radians matrix = matrix !*! rotationMatrix
   where
+    -- radians = degrees * (pi / 180)
     rotationMatrix = m33_to_m44
                      $ fromQuaternion
-                     $ axisAngle (V3 0 0 1) angle
+                     $ axisAngle (V3 0 0 1) radians
 
 ortho2D :: Integral a => a -> a -> a -> Matrix
 ortho2D va w h
@@ -62,7 +63,7 @@ ortho2D va w h
   where
     visibleArea = fromIntegral va
     aspectRatio = fromIntegral w / fromIntegral h
--- near/far fixed for ortho
+    -- near/far fixed for ortho
     near        = -1
     far         = 1
 

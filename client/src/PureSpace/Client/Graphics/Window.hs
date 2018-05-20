@@ -25,12 +25,17 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
-import qualified Data.Map                      as M
-import           Graphics.GLUtil.BufferObjects (makeBuffer)
-import           Graphics.UI.GLUT              as GLUT hiding (ortho2D, rotate,
-                                                        scale, uniform)
+import qualified Data.Map                        as M
+import qualified Data.Vector                     as V
+import           Graphics.GLUtil.BufferObjects   (makeBuffer)
+import           Graphics.UI.GLUT                as GLUT hiding (Position,
+                                                          ortho2D, position,
+                                                          uniform)
+import           Linear                          hiding (identity)
 import           PureSpace.Client.Graphics
 import           PureSpace.Common.Concurrent
+import           PureSpace.Common.Game.Collision
+import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
@@ -69,7 +74,7 @@ createGameWindow = do
   (_, _)                   <- getArgsAndInitialize
   window                   <- createWindow "PureSpace"
   (program, sprites) <- initContext atlas
-  displayCallback $= display program sprites
+  displayCallback $= debugDisplay program sprites
   idleCallback    $= Just (postRedisplay (Just window))
   loadInputState
   windowLoop
@@ -116,15 +121,11 @@ initContext (SpriteAtlas image sprites) = do
                                   , (FragmentShader, shadersPath <> "/sprite.frag")]
   initialDisplayMode          $= [DoubleBuffered]
   blend                       $= Enabled
-  sampleAlphaToOne            $= Enabled
-  sampleAlphaToCoverage       $= Enabled
-  depthBounds                 $= Nothing
-  depthFunc                   $= Nothing
+  blendFunc                   $= (SrcAlpha, OneMinusSrcAlpha)
   (SpriteTexture textW textH text) <- createTexture image
   let vertices = initVertices textW textH =<< sprites
   buffer          <- liftIO $ makeBuffer ArrayBuffer vertices
   graphicsSprites <- traverse (uncurry (createGraphicsSprite buffer)) (enumerate sprites)
-  currentProgram           $= Just program
   textureBinding Texture2D $= Just text
   let spriteMap = buildSpriteMap graphicsSprites
   pure (program, spriteMap)
@@ -144,27 +145,81 @@ createGraphicsSprite buffer i sprite =
   <*> pure sprite
   <*> spriteVAO buffer i
 
-display :: Program -> SpritesByName -> DisplayCallback
-display program sprites = do
-  Size w h          <- GLUT.get windowSize
-  time              <- elapsedTime
-  clear [ColorBuffer, DepthBuffer]
-  let orangeShip = "playerShip3_orange.png" `vaoByName` sprites
-  maybe (pure ()) (displaySprite (projection w h) time) orangeShip
-  swapBuffers
-  postRedisplay Nothing
-  where
-    uniformP    = uniform program
-    projection  = ortho2D 1
-    modelView t = scale2D 0.5 $ rotate2D (fromIntegral t / 360) identity
-    displaySprite proj time vao = do
-      uniformP "mProjection" proj
-      uniformP "mModelView" $ modelView time
-      bindVertexArrayObject $= Just vao
-      spriteDraw
-      bindVertexArrayObject $= Nothing
-
 vaoByName :: SpriteName-> SpritesByName -> Maybe VertexArrayObject
 vaoByName name sprites =
   let vao (GraphicsSprite _ v) = v
   in fmap vao $ name `M.lookup` sprites
+
+{-
+############################
+Warning: even worse than above, eye bleeding may occurs
+############################
+-}
+
+entities :: [TestEntity]
+entities = [TestEntity (V2 600 450) 98 75 (V2 (-10) (-1)),
+            TestEntity (V2 100 410) 98 75 (V2   10    0),
+            TestEntity (V2 600 400) 98 75 (V2 (-10)  15)]
+
+mapWidth :: GridSize
+mapWidth = 800
+
+debugDisplay :: Program -> SpritesByName -> DisplayCallback
+debugDisplay program sprites = do
+  Size w h          <- GLUT.get windowSize
+  time              <- elapsedTime
+  clear [ColorBuffer, DepthBuffer]
+  currentProgram $= Just program
+  let orangeShip = "playerShip3_orange.png" `vaoByName` sprites
+      elapsedSeconds = fromIntegral time / 1000
+      stepEntities =  (\e -> e & position %~ (+ e ^. velocity * elapsedSeconds)) <$> entities
+  debugCollision stepEntities
+  traverse_ (\x -> sequence_ $ fmap ($ x) (displaySprite w h <$> stepEntities)) orangeShip
+  currentProgram $= Nothing
+  swapBuffers
+  postRedisplay Nothing
+  where
+    uniformP = uniform program
+    displaySprite w h (TestEntity p _ _ v) vao = do
+      uniformP "mProjection" $ ortho2D 1 w h
+      uniformP "mModelView"  $ rotate2D (angleOf v) $ translate2D worldToUV identity
+      bindVertexArrayObject $= Just vao
+      spriteDraw
+      bindVertexArrayObject $= Nothing
+      where
+        angleOf (V2 x y) = atan2 y x - pi/2
+        worldToUV =
+          let mapHW = mapWidth / 2
+          in (/ mapHW) . flip (-) mapHW <$> p
+
+debugCollision :: [TestEntity] -> DisplayCallback
+debugCollision e =
+  let grid = createCollisionGrid mapWidth 10 e
+      collisions = V.toList $ computeCollisions grid
+  in traverse_ print collisions
+
+data TestEntity = TestEntity (V2 Float) Int Int (V2 Float) deriving (Show, Eq)
+
+instance HasPosition TestEntity where
+  position =
+    let f (TestEntity a _ _ _)   = a
+        g (TestEntity _ b c d) a = TestEntity a b c d
+    in lens f g
+
+instance HasVelocity TestEntity where
+  velocity =
+    let f (TestEntity _ _ _ d)   = d
+        g (TestEntity a b c _) d = TestEntity a b c d
+    in lens f g
+
+instance HasWidth TestEntity where
+  width =
+    let f (TestEntity _ b _ _)   = b
+        g (TestEntity a _ c d) b = TestEntity a b c d
+    in lens f g
+
+instance HasHeight TestEntity where
+  height =
+    let f (TestEntity _ _ c _)   = c
+        g (TestEntity a b _ d) c = TestEntity a b c d
+    in lens f g

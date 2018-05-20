@@ -42,6 +42,7 @@ library
                      , PureSpace.Common.Resource
                      , PureSpace.Common.Resource.Error
                      , PureSpace.Common.Game.Types
+                     , PureSpace.Common.Game.Geometry
                      , PureSpace.Common.Game.Action
                      , PureSpace.Common.Game.Collision
                      , PureSpace.Common.Game.FSM
@@ -57,6 +58,8 @@ library
                      , stm
                      , directory
                      , linear
+                     , containers
+                     , vector
 
 executable purespace-client
   main-is:             Main.hs

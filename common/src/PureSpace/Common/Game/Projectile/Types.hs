@@ -20,12 +20,14 @@
 module PureSpace.Common.Game.Projectile.Types
   (
     module PureSpace.Common.Game.Types,
-    ProjectileType (..),
     Projectile (..),
     ProjectileCaracteristics (..),
-    HasProjectileType (..),
+    ProjectileType (..),
+    ProjectileIdentifier (..),
     HasProjectile (..),
     HasProjectileCaracteristics (..),
+    HasProjectileType (..),
+    HasProjectileIdentifier (..)
   )
   where
 

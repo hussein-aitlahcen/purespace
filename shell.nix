@@ -14,7 +14,9 @@ let
         src = ./.;
         isLibrary = true;
         isExecutable = true;
-        libraryHaskellDepends = [ base directory lens linear mtl stm ];
+        libraryHaskellDepends = [
+          base containers directory lens linear mtl stm vector
+        ];
         executableHaskellDepends = [
           aeson base bytestring containers GLUT GLUtil JuicyPixels linear
           OpenGL OpenGLRaw stm vector

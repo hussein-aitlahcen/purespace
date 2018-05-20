@@ -20,12 +20,14 @@
 module PureSpace.Common.Game.Ship.Types
   (
     module PureSpace.Common.Game.Projectile.Types,
-    ShipType (..),
     Ship (..),
     ShipCaracteristics (..),
-    HasShipType (..),
+    ShipType (..),
+    ShipIdentifier (..),
     HasShip (..),
     HasShipCaracteristics (..),
+    HasShipType (..),
+    HasShipIdentifier (..),
   )
   where
 

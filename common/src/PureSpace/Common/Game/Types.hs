@@ -19,7 +19,7 @@
 
 module PureSpace.Common.Game.Types
   (
-    module Linear,
+    V2 (..),
     Position,
     Velocity,
     MaxVelocity ,
@@ -45,7 +45,7 @@ module PureSpace.Common.Game.Types
   )
   where
 
-import           Linear
+import           Linear                (V2 (..))
 import           PureSpace.Common.Lens (Lens')
 
 {-
