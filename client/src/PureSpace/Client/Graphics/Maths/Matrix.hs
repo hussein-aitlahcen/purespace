@@ -48,7 +48,7 @@ translate2D (V2 x y) m = m & translation +~ V3 x y 0
 scale2D :: V2 Float -> Matrix -> Matrix
 scale2D (V2 x y) = (!*!) (scaled (V4 x y 1 1))
 
-rotate2D :: GLfloat -> Matrix -> Matrix
+rotate2D :: Float -> Matrix -> Matrix
 rotate2D radians matrix = matrix !*! rotationMatrix
   where
     -- radians = degrees * (pi / 180)
@@ -56,13 +56,13 @@ rotate2D radians matrix = matrix !*! rotationMatrix
                      $ fromQuaternion
                      $ axisAngle (V3 0 0 1) radians
 
-ortho2D :: Integral a => a -> a -> a -> Matrix
+ortho2D :: Float -> Float -> Float -> Matrix
 ortho2D va w h
   | w > h     = ortho (-visibleArea*aspectRatio) (visibleArea*aspectRatio) (-visibleArea)             visibleArea               near far
   | otherwise = ortho (-visibleArea)             visibleArea               (-visibleArea/aspectRatio) (visibleArea/aspectRatio) near far
   where
-    visibleArea = fromIntegral va
-    aspectRatio = fromIntegral w / fromIntegral h
+    visibleArea = va
+    aspectRatio = w / h
     -- near/far fixed for ortho
     near        = -1
     far         = 1
