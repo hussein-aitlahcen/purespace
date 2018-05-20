@@ -29,6 +29,8 @@ module PureSpace.Common.Game.Types
     Damage,
     Health,
     MaxHealth,
+    Width,
+    Height,
     HasPosition (..),
     HasVelocity (..),
     HasMaxVelocity (..),
@@ -38,6 +40,8 @@ module PureSpace.Common.Game.Types
     HasDamage (..),
     HasHealth (..),
     HasMaxHealth (..),
+    HasWidth (..),
+    HasHeight (..)
   )
   where
 
@@ -59,6 +63,8 @@ type FireRange    = Float
 type Damage       = Float
 type Health       = Float
 type MaxHealth    = Float
+type Width        = Int
+type Height       = Int
 
 class HasPosition s where
   position :: Lens' s Position
@@ -86,3 +92,9 @@ class HasHealth s where
 
 class HasMaxHealth s where
   maxHealth :: Lens' s MaxHealth
+
+class HasWidth s where
+  width :: Lens' s Width
+
+class HasHeight s where
+  height :: Lens' s Height

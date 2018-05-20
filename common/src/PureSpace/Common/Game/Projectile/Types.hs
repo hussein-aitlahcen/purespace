@@ -32,12 +32,12 @@ module PureSpace.Common.Game.Projectile.Types
 import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Lens       (Lens', lens)
 
-data ProjectileType = Laser
-                    | Rocket
-                    deriving Show
-
-data Projectile               = Projectile ProjectileCaracteristics Velocity deriving Show
+data Projectile               = Projectile ProjectileCaracteristics Velocity               deriving Show
 data ProjectileCaracteristics = ProjectileCaracteristics ProjectileType Damage MaxVelocity deriving Show
+data ProjectileType           = ProjectileType ProjectileIdentifier Width Height           deriving Show
+data ProjectileIdentifier     = Laser
+                              | Rocket
+                              deriving Show
 
 class HasProjectile s where
   projectile :: Lens' s Projectile
@@ -47,6 +47,9 @@ class HasProjectileCaracteristics s where
 
 class HasProjectileType s where
   projectileType :: Lens' s ProjectileType
+
+class HasProjectileIdentifier s where
+  projectileIdentifier :: Lens' s ProjectileIdentifier
 
 instance HasProjectile Projectile where
   projectile = id
@@ -66,17 +69,38 @@ instance HasVelocity Projectile where
 instance HasProjectileType Projectile where
   projectileType = projectileCaracteristics . projectileType
 
+instance HasProjectileIdentifier Projectile where
+  projectileIdentifier = projectileCaracteristics . projectileIdentifier
+
+instance HasWidth Projectile where
+  width = projectileCaracteristics . width
+
+instance HasHeight Projectile where
+  height = projectileCaracteristics . height
+
 instance HasDamage Projectile where
   damage = projectileCaracteristics . damage
 
 instance HasMaxVelocity Projectile where
   maxVelocity = projectileCaracteristics . maxVelocity
 
+instance HasProjectileCaracteristics ProjectileCaracteristics where
+  projectileCaracteristics = id
+
 instance HasProjectileType ProjectileCaracteristics where
   projectileType =
     let f (ProjectileCaracteristics a _ _)   = a
         g (ProjectileCaracteristics _ b c) a = ProjectileCaracteristics a b c
     in lens f g
+
+instance HasProjectileIdentifier ProjectileCaracteristics where
+  projectileIdentifier = projectileType . projectileIdentifier
+
+instance HasWidth ProjectileCaracteristics where
+  width = projectileType . width
+
+instance HasHeight ProjectileCaracteristics where
+  height = projectileType . height
 
 instance HasDamage ProjectileCaracteristics where
   damage =
@@ -88,4 +112,25 @@ instance HasMaxVelocity ProjectileCaracteristics where
   maxVelocity =
     let f (ProjectileCaracteristics _ _ c)   = c
         g (ProjectileCaracteristics a b _) c = ProjectileCaracteristics a b c
+    in lens f g
+
+instance HasProjectileType ProjectileType where
+  projectileType = id
+
+instance HasProjectileIdentifier ProjectileType where
+  projectileIdentifier =
+    let f (ProjectileType a _ _)   = a
+        g (ProjectileType _ b c) a = ProjectileType a b c
+    in lens f g
+
+instance HasWidth ProjectileType where
+  width =
+    let f (ProjectileType _ b _)   = b
+        g (ProjectileType a _ c) b = ProjectileType a b c
+    in lens f g
+
+instance HasHeight ProjectileType where
+  height =
+    let f (ProjectileType _ _ c)   = c
+        g (ProjectileType a b _) c = ProjectileType a b c
     in lens f g

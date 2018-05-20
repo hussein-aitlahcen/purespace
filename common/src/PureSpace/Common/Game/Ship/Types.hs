@@ -32,22 +32,23 @@ module PureSpace.Common.Game.Ship.Types
 import           PureSpace.Common.Game.Projectile.Types
 import           PureSpace.Common.Lens                  (Lens', lens)
 
-data ShipType = Fighter
-              | Bomber
-              | Frigate
-              | Corvette
-              | Destroyer
-              | Cruiser
-              | SupportShip
-              | BattleShip
-              | MotherShip
-              | BattleStar
-              | BaseStar
-              | Juggernaut
-              deriving Show
 
-data Ship               = Ship ShipCaracteristics Health FireCooldown Position Velocity deriving Show
+data Ship               = Ship ShipCaracteristics Health FireCooldown Position Velocity                                 deriving Show
 data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate FireRange deriving Show
+data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving Show
+data ShipIdentifier     = Fighter
+                        | Bomber
+                        | Frigate
+                        | Corvette
+                        | Destroyer
+                        | Cruiser
+                        | SupportShip
+                        | BattleShip
+                        | MotherShip
+                        | BattleStar
+                        | BaseStar
+                        | Juggernaut
+                        deriving Show
 
 class HasShip s where
   ship :: Lens' s Ship
@@ -57,6 +58,9 @@ class HasShipCaracteristics s where
 
 class HasShipType s where
   shipType :: Lens' s ShipType
+
+class HasShipIdentifier s where
+  shipIdentifier :: Lens' s ShipIdentifier
 
 instance HasShip Ship where
   ship = id
@@ -94,6 +98,15 @@ instance HasVelocity Ship where
 instance HasShipType Ship where
   shipType = shipCaracteristics . shipType
 
+instance HasShipIdentifier Ship where
+  shipIdentifier = shipCaracteristics . shipIdentifier
+
+instance HasWidth Ship where
+  width = shipCaracteristics . width
+
+instance HasHeight Ship where
+  height = shipCaracteristics . height
+
 instance HasMaxHealth Ship where
   maxHealth = shipCaracteristics . maxHealth
 
@@ -117,6 +130,15 @@ instance HasShipType ShipCaracteristics where
     let f (ShipCaracteristics a _ _ _ _ _)   = a
         g (ShipCaracteristics _ b c d e f) a = ShipCaracteristics a b c d e f
     in lens f g
+
+instance HasShipIdentifier ShipCaracteristics where
+  shipIdentifier = shipType . shipIdentifier
+
+instance HasWidth ShipCaracteristics where
+  width = shipType . width
+
+instance HasHeight ShipCaracteristics where
+  height = shipType . height
 
 instance HasProjectileCaracteristics ShipCaracteristics where
   projectileCaracteristics =
@@ -146,4 +168,25 @@ instance HasFireRange ShipCaracteristics where
    fireRange =
     let f (ShipCaracteristics _ _ _ _ _ f)   = f
         g (ShipCaracteristics a b c d e _) f = ShipCaracteristics a b c d e f
+    in lens f g
+
+instance HasShipType ShipType where
+  shipType = id
+
+instance HasShipIdentifier ShipType where
+  shipIdentifier =
+    let f (ShipType a _ _)   = a
+        g (ShipType _ b c) a = ShipType a b c
+    in lens f g
+
+instance HasWidth ShipType where
+  width =
+    let f (ShipType _ b _)   = b
+        g (ShipType a _ c) b = ShipType a b c
+    in lens f g
+
+instance HasHeight ShipType where
+  height =
+    let f (ShipType _ _ c)   = c
+        g (ShipType a b _) c = ShipType a b c
     in lens f g
