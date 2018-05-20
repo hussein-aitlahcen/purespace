@@ -157,12 +157,13 @@ Warning: even worse than above, eye bleeding may occurs
 -}
 
 entities :: [TestEntity]
-entities = [TestEntity (V2 600 450) 98 75 (V2 (-10) (-1)),
-            TestEntity (V2 100 410) 98 75 (V2   10    0),
-            TestEntity (V2 600 400) 98 75 (V2 (-10)  15)]
+entities = [TestEntity (V2 400 200) 98 75 (V2 (-60)   0),
+            TestEntity (V2 0   200) 98 75 (V2   60    0),
+            TestEntity (V2 200 400) 98 75 (V2    0 (-60)),
+            TestEntity (V2 0     0) 98 75 (V2    60  100)]
 
 mapWidth :: GridSize
-mapWidth = 800
+mapWidth = 600
 
 debugDisplay :: Program -> SpritesByName -> DisplayCallback
 debugDisplay program sprites = do
@@ -170,31 +171,33 @@ debugDisplay program sprites = do
   time              <- elapsedTime
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
-  let orangeShip = "playerShip3_orange.png" `vaoByName` sprites
+  let orangeShip = "playerShip1_blue.png" `vaoByName` sprites
       elapsedSeconds = fromIntegral time / 1000
       stepEntities =  (\e -> e & position %~ (+ e ^. velocity * elapsedSeconds)) <$> entities
   debugCollision stepEntities
-  traverse_ (\x -> sequence_ $ fmap ($ x) (displaySprite w h <$> stepEntities)) orangeShip
+  traverse_ (\x -> sequence_ $ fmap ($ x) (displaySprite (fromIntegral w) (fromIntegral h) <$> stepEntities)) orangeShip
   currentProgram $= Nothing
   swapBuffers
   postRedisplay Nothing
   where
     uniformP = uniform program
     displaySprite w h (TestEntity p _ _ v) vao = do
-      uniformP "mProjection" $ ortho2D 1 w h
-      uniformP "mModelView"  $ rotate2D (angleOf v) $ translate2D worldToUV identity
+      uniformP "mProjection" $ ortho2D 3 w h
+      -- WHY SHOULD I SCALE TO GET IT NICE ??
+      uniformP "mModelView"  $ rotate2D (angleOf v) $ translate2D worldToUV $ scale2D 3.3 identity
       bindVertexArrayObject $= Just vao
       spriteDraw
       bindVertexArrayObject $= Nothing
       where
+        -- pi/2 because of the sprite initial position :/
         angleOf (V2 x y) = atan2 y x - pi/2
         worldToUV =
           let mapHW = mapWidth / 2
-          in (/ mapHW) . flip (-) mapHW <$> p
+          in (p - V2 mapHW mapHW) ^/ mapHW
 
 debugCollision :: [TestEntity] -> DisplayCallback
 debugCollision e =
-  let grid = createCollisionGrid mapWidth 10 e
+  let grid       = createCollisionGrid mapWidth 20 e
       collisions = V.toList $ computeCollisions grid
   in traverse_ print collisions
 
