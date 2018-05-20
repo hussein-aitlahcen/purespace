@@ -30,9 +30,9 @@ import           Graphics.GLUtil        (makeVAO, offsetPtr)
 import           Graphics.UI.GLUT       (AttribLocation (..), BufferObject,
                                          BufferTarget (..), Capability (..),
                                          DataType (..), GLfloat,
-                                         IntegerHandling (..), NumComponents,
-                                         PrimitiveMode (..),
-                                         VertexArrayDescriptor (..), NumArrayIndices,
+                                         IntegerHandling (..), NumArrayIndices,
+                                         NumComponents, PrimitiveMode (..),
+                                         VertexArrayDescriptor (..),
                                          VertexArrayObject, bindBuffer,
                                          drawArrays, vertexAttribArray,
                                          vertexAttribPointer, ($=))
@@ -55,19 +55,21 @@ spriteVertices x y w h textW textH = triangles
     nY = norm y textH
     nW = norm w textW
     nH = norm h textH
+    hw = nW / 2
+    hh = nH / 2
     triangles =
       [
         -- vertexX, vertexY, textureX, textureY,
         -- interpreted as vec4 by the vertex shader
         -- bottom left triangle
-        -nW/2,  nH/2, nX, nY,
-         nW/2,  nH/2, nX + nW, nY,
-         nW/2, -nH/2, nX + nW, nY + nH,
+        -hw,  hh, nX, nY,
+         hw,  hh, nX + nW, nY,
+         hw, -hh, nX + nW, nY + nH,
 
         -- top right triangle
-        -nW/2,  nH/2, nX, nY,
-         nW/2, -nH/2, nX + nW, nY + nH,
-        -nW/2, -nH/2, nX, nY + nH
+        -hw,  hh, nX, nY,
+         hw, -hh, nX + nW, nY + nH,
+        -hw, -hh, nX, nY + nH
       ]
 
 spriteDraw :: MonadIO m => m ()
