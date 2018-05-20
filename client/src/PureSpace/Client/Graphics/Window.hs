@@ -158,9 +158,7 @@ Warning: even worse than above, eye bleeding may occurs
 
 entities :: [TestEntity]
 entities = [TestEntity (V2 400 200) 98 75 (V2 (-60)   0),
-            TestEntity (V2 0   200) 98 75 (V2   60    0),
-            TestEntity (V2 200 400) 98 75 (V2    0 (-60)),
-            TestEntity (V2 0     0) 98 75 (V2    60  100)]
+            TestEntity (V2 0   200) 98 75 (V2   60    0)]
 
 mapWidth :: GridSize
 mapWidth = 600
@@ -182,24 +180,20 @@ debugDisplay program sprites = do
   where
     uniformP = uniform program
     displaySprite w h (TestEntity p _ _ v) vao = do
-      uniformP "mProjection" $ ortho2D 3 w h
-      -- WHY SHOULD I SCALE TO GET IT NICE ??
-      uniformP "mModelView"  $ rotate2D (angleOf v) $ translate2D worldToUV $ scale2D 3.3 identity
+      uniformP "mProjection" $ ortho2D mapWidth w h
+      uniformP "mModelView"  $ rotate2D (angleOf v) $ translate2D p identity
       bindVertexArrayObject $= Just vao
       spriteDraw
       bindVertexArrayObject $= Nothing
       where
         -- pi/2 because of the sprite initial position :/
         angleOf (V2 x y) = atan2 y x - pi/2
-        worldToUV =
-          let mapHW = mapWidth / 2
-          in (p - V2 mapHW mapHW) ^/ mapHW
 
 debugCollision :: [TestEntity] -> DisplayCallback
-debugCollision e =
+debugCollision e = do
   let grid       = createCollisionGrid mapWidth 20 e
       collisions = V.toList $ computeCollisions grid
-  in traverse_ print collisions
+  traverse_ print collisions
 
 data TestEntity = TestEntity (V2 Float) Int Int (V2 Float) deriving (Show, Eq)
 

@@ -55,8 +55,8 @@ spriteVertices x y w h textW textH = triangles
     nY = norm y textH
     nW = norm w textW
     nH = norm h textH
-    hw = nW / 2
-    hh = nH / 2
+    hw = norm w 2
+    hh = norm h 2
     triangles =
       [
         -- vertexX, vertexY, textureX, textureY,
