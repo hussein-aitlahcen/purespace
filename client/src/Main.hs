@@ -22,8 +22,4 @@ module Main where
 import           PureSpace.Client.Game
 
 main :: IO ()
-main = do
-  result <- runGame
-  case result of
-    Left message -> print (message :: GameError)
-    Right _      -> putStrLn "Unseen string"
+main = runGame
