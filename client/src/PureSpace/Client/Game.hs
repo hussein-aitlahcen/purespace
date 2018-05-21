@@ -30,10 +30,37 @@ import           PureSpace.Client.Game.Config
 import           PureSpace.Client.Game.Error
 import           PureSpace.Client.Game.State
 import           PureSpace.Client.Graphics.Window
+import           PureSpace.Common.Concurrent
+import           PureSpace.Common.Game.Logic.Loop
 import           PureSpace.Common.Lens
+import           System.Clock
 
-runGame :: IO (Either GameError ())
-runGame = evalStateT (runReaderT (runExceptT createGameWindow) config) initialGameState
-  where
-    config = GameConfig
+runGraphics :: IO ()
+runGraphics =
+  let config = GameConfig
+      go = evalStateT (runReaderT (runExceptT createGameWindow) config) initialGameState
+      displayResult res = case res of
+        Left message -> print (message :: GameError)
+        Right _      -> putStrLn "Unseen string"
+  in go >>= displayResult
 
+runLogic :: IO ()
+runLogic =
+  do initial <- liftIO $ nsec <$> getTime MonotonicRaw
+     evalStateT logicLoop (Timer initial)
+
+-- | Makes every thread return an empty MVar,
+-- so the main thread can wait for them.
+forkLoop :: IO () -> IO (MVar ())
+forkLoop thread = do
+    handle <- newEmptyMVar
+    _ <- forkFinally thread (\_ -> putMVar handle ())
+    return handle
+
+runGame :: IO ()
+runGame = do
+  graphicThread <- forkLoop $ void runGraphics
+  logicThread <- forkLoop runLogic
+  -- Waiting for all threads to finish
+  mapM_ takeMVar [graphicThread, logicThread]
+  putStrLn "Finished"
