@@ -4,7 +4,7 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, aeson, base, bytestring, containers
+  f = { mkDerivation, aeson, base, bytestring, clock, containers
       , directory, GLUT, GLUtil, JuicyPixels, lens, linear, mtl, OpenGL
       , OpenGLRaw, stdenv, stm, vector
       }:
