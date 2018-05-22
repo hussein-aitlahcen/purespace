@@ -157,11 +157,11 @@ Warning: even worse than above, eye bleeding may occurs
 -}
 
 entities :: [TestEntity]
-entities = [TestEntity (V2 400 200) 98 75 (V2 (-60)   0),
-            TestEntity (V2 0   200) 98 75 (V2   60    0)]
+entities = [TestEntity (V2   200  0) 98 75 (V2 (-60)   0),
+            TestEntity (V2 (-200) 0) 98 75 (V2   60    0)]
 
 mapWidth :: GridSize
-mapWidth = 600
+mapWidth = 1200
 
 debugDisplay :: Program -> SpritesByName -> DisplayCallback
 debugDisplay program sprites = do
@@ -169,9 +169,9 @@ debugDisplay program sprites = do
   time              <- elapsedTime
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
-  let orangeShip = "playerShip1_blue.png" `vaoByName` sprites
+  let orangeShip     = "playerShip1_blue.png" `vaoByName` sprites
       elapsedSeconds = fromIntegral time / 1000
-      stepEntities =  (\e -> e & position %~ (+ e ^. velocity * elapsedSeconds)) <$> entities
+      stepEntities   =  (\e -> e & position %~ (+ e ^. velocity * elapsedSeconds)) <$> entities
   debugCollision stepEntities
   traverse_ (\x -> sequence_ $ fmap ($ x) (displaySprite (fromIntegral w) (fromIntegral h) <$> stepEntities)) orangeShip
   currentProgram $= Nothing
@@ -191,7 +191,7 @@ debugDisplay program sprites = do
 
 debugCollision :: [TestEntity] -> DisplayCallback
 debugCollision e = do
-  let grid       = createCollisionGrid mapWidth 20 e
+  let grid       = createSpatialGrid mapWidth 20 e
       collisions = V.toList $ computeCollisions grid
   traverse_ print collisions
 

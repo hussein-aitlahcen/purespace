@@ -30,7 +30,7 @@ module PureSpace.Common.Game.Collision
     Bucket (..),
     Grid (..),
     Collision,
-    createCollisionGrid,
+    createSpatialGrid,
     computeCollisions,
   )
   where
@@ -40,7 +40,6 @@ import qualified Data.IntMap.Strict             as M
 import qualified Data.Vector                    as V
 import           Linear
 import           PureSpace.Common.Game.Geometry
-import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Prelude
 
 type Collision a  = (a, a)
@@ -48,17 +47,17 @@ type GridSize     = Float
 type GridDivision = Float
 type BucketSize   = Float
 type BucketId     = V2 Int
-data Bucket     a = Bucket BucketId (V.Vector a)          deriving Show
-data Grid       a = Grid BucketSize (M.IntMap (Bucket a)) deriving Show
+data Bucket     a = Bucket BucketId (V.Vector a)                                deriving Show
+data Grid       a = Grid GridSize GridDivision BucketSize (M.IntMap (Bucket a)) deriving Show
 
-createCollisionGrid :: (HasPosition s,
+createSpatialGrid :: (HasPosition s,
                         HasWidth s,
                         HasHeight s)
                     => GridSize
                     -> GridDivision
                     -> [s]
                     -> Grid s
-createCollisionGrid gs gd units =
+createSpatialGrid gs gd units =
   let bs              = gs / gd
       rc              = rectangleBuckets bs
       -- (unit, (tl, br))
@@ -71,7 +70,7 @@ createCollisionGrid gs gd units =
                                 , y <- [0..round gd]
                                 , let p = V2 x y
                                 , let h = bucketHashId p]
-  in Grid bs buckets
+  in Grid gs gd bs buckets
 
 rectangleBuckets :: BucketSize -> Corners -> [BucketId]
 rectangleBuckets bs (a, b) =
@@ -92,7 +91,7 @@ computeCollisions :: (HasPosition s,
                       Eq s)
                   => Grid s
                   -> V.Vector (Collision s)
-computeCollisions (Grid _ buckets) = M.foldr step V.empty buckets
+computeCollisions (Grid _ _ _ buckets) = M.foldr step V.empty buckets
   where
     step (Bucket _ objs) acc = go $ V.length objs
       where
@@ -108,3 +107,19 @@ computeCollisions (Grid _ buckets) = M.foldr step V.empty buckets
                                              k <- [j+1..l-1],
                                              let a = objs V.! j,
                                              let b = objs V.! k])
+
+
+-- TODO: circle to buckets
+circleRangeBuckets :: (HasPosition s,
+                       HasWidth s,
+                       HasHeight s)
+                   => Grid s
+                   -> Position
+                   -> Float
+                   -> [Bucket s]
+circleRangeBuckets (Grid _ _ _ bucks) pos range =
+  let points = [pos + V2 0 range,
+                pos + V2 range 0,
+                pos + V2 (-range) 0,
+                pos + V2 0 (-range)]
+  in []

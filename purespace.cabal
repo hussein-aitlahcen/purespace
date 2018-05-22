@@ -41,18 +41,19 @@ library
                      , PureSpace.Common.Files
                      , PureSpace.Common.Resource
                      , PureSpace.Common.Resource.Error
+                     , PureSpace.Common.Game.GameFSM
+                     , PureSpace.Common.Game.State
+                     , PureSpace.Common.Game.Error
                      , PureSpace.Common.Game.Types
                      , PureSpace.Common.Game.Geometry
                      , PureSpace.Common.Game.Action
                      , PureSpace.Common.Game.Collision
-                     , PureSpace.Common.Game.FSM
-                     , PureSpace.Common.Game.Ship.Types
-                     , PureSpace.Common.Game.Projectile.Types
-                     , PureSpace.Common.Game.Projectile.Damage
-                     , PureSpace.Common.Game.State.GameState
-                     , PureSpace.Common.Game.State.Player
-                     , PureSpace.Common.Game.State.Types
-                     , PureSpace.Common.Game.Base.Types
+                     , PureSpace.Common.Game.Entity
+                     , PureSpace.Common.Game.Ship
+                     , PureSpace.Common.Game.Projectile
+                     , PureSpace.Common.Game.Base
+                     , PureSpace.Common.Game.Player.State
+                     , PureSpace.Common.Game.Player.Error
                      , PureSpace.Common.Game.Logic.Loop
   hs-source-dirs:      common/src/
   default-language:    Haskell2010

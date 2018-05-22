@@ -20,6 +20,8 @@
 module PureSpace.Common.Game.Types
   (
     V2 (..),
+    Team (..),
+    DeltaTime,
     Position,
     Velocity,
     MaxVelocity ,
@@ -31,6 +33,7 @@ module PureSpace.Common.Game.Types
     MaxHealth,
     Width,
     Height,
+    HasTeam (..),
     HasPosition (..),
     HasVelocity (..),
     HasMaxVelocity (..),
@@ -54,6 +57,7 @@ import           PureSpace.Common.Lens (Lens')
   FireCooldown = next available shot
 -}
 
+
 type Position     = V2 Float
 type Velocity     = V2 Float
 type MaxVelocity  = Velocity
@@ -65,6 +69,13 @@ type Health       = Float
 type MaxHealth    = Float
 type Width        = Int
 type Height       = Int
+type DeltaTime    = Float
+data Team         = One
+                  | Two
+                  deriving (Eq, Ord, Show)
+
+class HasTeam t where
+  team :: Lens' t Team
 
 class HasPosition s where
   position :: Lens' s Position
@@ -98,3 +109,4 @@ class HasWidth s where
 
 class HasHeight s where
   height :: Lens' s Height
+

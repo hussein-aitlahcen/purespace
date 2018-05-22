@@ -1,4 +1,4 @@
--- Types.hs ---
+-- Ship.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,9 +17,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Common.Game.Ship.Types
+module PureSpace.Common.Game.Ship
   (
-    module PureSpace.Common.Game.Projectile.Types,
+    module PureSpace.Common.Game.Projectile,
     Ship (..),
     ShipCaracteristics (..),
     ShipType (..),
@@ -31,11 +31,11 @@ module PureSpace.Common.Game.Ship.Types
   )
   where
 
-import           PureSpace.Common.Game.Projectile.Types
-import           PureSpace.Common.Lens                  (Lens', lens)
+import           PureSpace.Common.Game.Projectile
+import           PureSpace.Common.Lens            (Lens', lens)
 
 
-data Ship               = Ship ShipCaracteristics Health FireCooldown Position Velocity                                 deriving Show
+data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity                            deriving Show
 data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate FireRange deriving Show
 data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving Show
 data ShipIdentifier     = Fighter
@@ -69,32 +69,38 @@ instance HasShip Ship where
 
 instance HasShipCaracteristics Ship where
   shipCaracteristics =
-    let f (Ship a _ _ _ _)   = a
-        g (Ship _ b c d e) a = Ship a b c d e
+    let f (Ship a _ _ _ _ _)   = a
+        g (Ship _ b c d e k) a = Ship a b c d e k
+    in lens f g
+
+instance HasTeam Ship where
+  team =
+    let f (Ship _ b _ _ _ _)   = b
+        g (Ship a _ c d e k) b = Ship a b c d e k
     in lens f g
 
 instance HasHealth Ship where
   health =
-    let f (Ship _ b _ _ _)   = b
-        g (Ship a _ c d e) b = Ship a b c d e
+    let f (Ship _ _ c _ _ _)   = c
+        g (Ship a b _ d e k) c = Ship a b c d e k
     in lens f g
 
 instance HasFireCooldown Ship where
   fireCooldown =
-    let f (Ship _ _ c _ _)   = c
-        g (Ship a b _ d e) c = Ship a b c d e
+    let f (Ship _ _ _ d _ _)   = d
+        g (Ship a b c _ e k) d = Ship a b c d e k
     in lens f g
 
 instance HasPosition Ship where
   position =
-    let f (Ship _ _ _ d _)   = d
-        g (Ship a b c _ e) d = Ship a b c d e
+    let f (Ship _ _ _ _ e _)   = e
+        g (Ship a b c d _ k) e = Ship a b c d e k
     in lens f g
 
 instance HasVelocity Ship where
   velocity =
-    let f (Ship _ _ _ _ e)   = e
-        g (Ship a b c d _) e = Ship a b c d e
+    let f (Ship _ _ _ _ _ k)   = k
+        g (Ship a b c d e _) k = Ship a b c d e k
     in lens f g
 
 instance HasShipType Ship where
@@ -130,7 +136,7 @@ instance HasShipCaracteristics ShipCaracteristics where
 instance HasShipType ShipCaracteristics where
   shipType =
     let f (ShipCaracteristics a _ _ _ _ _)   = a
-        g (ShipCaracteristics _ b c d e f) a = ShipCaracteristics a b c d e f
+        g (ShipCaracteristics _ b c d e k) a = ShipCaracteristics a b c d e k
     in lens f g
 
 instance HasShipIdentifier ShipCaracteristics where
@@ -145,31 +151,31 @@ instance HasHeight ShipCaracteristics where
 instance HasProjectileCaracteristics ShipCaracteristics where
   projectileCaracteristics =
     let f (ShipCaracteristics _ b _ _ _ _)   = b
-        g (ShipCaracteristics a _ c d e f) b = ShipCaracteristics a b c d e f
+        g (ShipCaracteristics a _ c d e k) b = ShipCaracteristics a b c d e k
     in lens f g
 
 instance HasMaxHealth ShipCaracteristics where
   maxHealth =
     let f (ShipCaracteristics _ _ c _ _ _)   = c
-        g (ShipCaracteristics a b _ d e f) c = ShipCaracteristics a b c d e f
+        g (ShipCaracteristics a b _ d e k) c = ShipCaracteristics a b c d e k
     in lens f g
 
 instance HasMaxVelocity ShipCaracteristics where
   maxVelocity =
     let f (ShipCaracteristics _ _ _ d _ _)   = d
-        g (ShipCaracteristics a b c _ e f) d = ShipCaracteristics a b c d e f
+        g (ShipCaracteristics a b c _ e k) d = ShipCaracteristics a b c d e k
     in lens f g
 
 instance HasFireRate ShipCaracteristics where
   fireRate =
     let f (ShipCaracteristics _ _ _ _ e _)   = e
-        g (ShipCaracteristics a b c d _ f) e = ShipCaracteristics a b c d e f
+        g (ShipCaracteristics a b c d _ k) e = ShipCaracteristics a b c d e k
     in lens f g
 
 instance HasFireRange ShipCaracteristics where
    fireRange =
-    let f (ShipCaracteristics _ _ _ _ _ f)   = f
-        g (ShipCaracteristics a b c d e _) f = ShipCaracteristics a b c d e f
+    let f (ShipCaracteristics _ _ _ _ _ k)   = k
+        g (ShipCaracteristics a b c d e _) k = ShipCaracteristics a b c d e k
     in lens f g
 
 instance HasShipType ShipType where

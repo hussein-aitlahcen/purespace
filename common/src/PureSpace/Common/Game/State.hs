@@ -1,4 +1,4 @@
--- GameState.hs ---
+-- State.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,40 +17,38 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Common.Game.State.GameState
+module PureSpace.Common.Game.State
   (
-    HasPlayerOne(..)
-  , HasPlayerTwo(..)
-  , GameState(..)
+    module PureSpace.Common.Game.Player.State,
+    GameState (..),
+    HasGameState (..),
+    HasPlayers (..),
   )
-where
+  where
 
-import           PureSpace.Common.Game.State.Player (Player)
+import           PureSpace.Common.Game.Player.State
 import           PureSpace.Common.Lens              (Lens', lens)
 
 -- | The state of the game, namely the current situation
--- of both players. Victory or loss condition can be inferred
+-- of the players. Victory or loss condition can be inferred
 -- from the situation of players at any given time.
-data GameState = GameState Player Player
+data GameState = GameState [PlayerState]
 
 -- To ponder: maybe an `Ixed` would be better here ?
 -- This might need to be changed. We will see what's more
 -- convenient when writing the main loop.
 
-class HasPlayerOne p where
-  playerOne :: Lens' p Player
+class HasGameState g where
+  gameState :: Lens' g GameState
 
-class HasPlayerTwo p where
-  playerTwo :: Lens' p Player
+instance HasGameState GameState where
+  gameState = id
 
-instance HasPlayerOne GameState where
-  playerOne =
-    let f (GameState a _) = a
-        g (GameState _ b) a = GameState a b
-    in lens f g
+class HasPlayers p where
+  players :: Lens' p [PlayerState]
 
-instance HasPlayerTwo GameState where
-  playerTwo =
-    let f (GameState _ b) = b
-        g (GameState a _) = GameState a
+instance HasPlayers GameState where
+  players =
+    let f (GameState a) = a
+        g _ = GameState
     in lens f g

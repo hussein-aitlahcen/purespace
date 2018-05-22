@@ -19,6 +19,11 @@
 
 module PureSpace.Common.Game.Geometry
   (
+    HasHeight(..),
+    HasPosition (..),
+    HasWidth (..),
+    Position,
+    V2 (..),
     Corners,
     corners,
     overlaps
@@ -60,9 +65,3 @@ overlaps sa sb =
      overlap ba ab bb ||
      overlap ab aa ba ||
      overlap bb aa ba
-
--- (TestEntity (V2 524.37 442.437) 98 75 (V2 (-10.0) (-1.0)),TestEntity (V2 524.37 513.445) 98 75 (V2 (-10.0) 15.0))
-{-
-  475 405 575 480
-  475 480 575 540
--}

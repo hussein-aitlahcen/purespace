@@ -17,6 +17,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module PureSpace.Common.Game.Logic.Loop
   (
@@ -25,12 +26,15 @@ module PureSpace.Common.Game.Logic.Loop
   )
   where
 
-import System.Clock
 import           PureSpace.Common.Concurrent
 import           PureSpace.Common.Lens
-import Data.Int (Int64)
+import           System.Clock
 
-newtype Timer = Timer Int64
+type Milliseconds = Integer
+type Microseconds = Integer
+type Nanoseconds  = Integer
+
+newtype Timer = Timer Integer
 
 class HasTimer t where
   timer :: Lens' t Timer
@@ -39,7 +43,7 @@ instance HasTimer Timer where
   timer = id
 
 class HasTime t where
-  time :: Lens' t Int64
+  time :: Lens' t Integer
 
 instance HasTime Timer where
   time =
@@ -54,10 +58,6 @@ logicLoop :: (MonadIO m,
        => m ()
 logicLoop = tick *> liftIO (threadDelay . fromIntegral . milliToMicro $ 50) *> logicLoop
 
-type Milliseconds = Int64
-type Microseconds = Int64
-type Nanoseconds = Int64
-
 nanoToMilli :: Nanoseconds -> Milliseconds
 nanoToMilli = (`div` 1000000)
 
@@ -71,8 +71,8 @@ tick :: (MonadIO m,
         => m ()
 tick = do
   previous <- get
-  now <- liftIO $ nsec <$> getTime MonotonicRaw
+  now <- liftIO $ toNanoSecs <$> getTime MonotonicRaw
   let delta = nanoToMilli $ now - (previous ^. time)
   modify $ timer .~ Timer now
   liftIO $ putStrLn $ "Tick with delta " ++ show delta ++ " ms"
-  
+

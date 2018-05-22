@@ -46,7 +46,7 @@ runGraphics =
 
 runLogic :: IO ()
 runLogic =
-  do initial <- liftIO $ nsec <$> getTime MonotonicRaw
+  do initial <- liftIO $ toNanoSecs <$> getTime MonotonicRaw
      evalStateT logicLoop (Timer initial)
 
 -- | Makes every thread return an empty MVar,

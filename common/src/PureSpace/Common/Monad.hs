@@ -19,6 +19,7 @@
 
 module PureSpace.Common.Monad
   (
+    module Control.Applicative,
     module Control.Monad.Error.Class,
     module Control.Monad.IO.Class,
     module Control.Monad.Except,
@@ -28,6 +29,7 @@ module PureSpace.Common.Monad
   )
   where
 
+import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.Error.Class
 import           Control.Monad.Except

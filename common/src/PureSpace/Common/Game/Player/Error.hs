@@ -1,4 +1,4 @@
--- Types.hs ---
+-- Error.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,12 +17,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Common.Game.State.Types
+module PureSpace.Common.Game.Player.Error
   (
-    module PureSpace.Common.Game.State.GameState
-  , module PureSpace.Common.Game.State.Player
   )
-where
+  where
 
-import PureSpace.Common.Game.State.GameState
-import PureSpace.Common.Game.State.Player
+

@@ -1,4 +1,4 @@
--- FSM.hs ---
+-- Error.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,7 +17,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Common.Game.FSM
+module PureSpace.Common.Game.Error
   (
   )
   where

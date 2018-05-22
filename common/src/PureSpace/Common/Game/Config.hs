@@ -1,4 +1,4 @@
--- Damage.hs ---
+-- Config.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,11 +17,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Common.Game.Projectile.Damage
+module PureSpace.Common.Game.Config
   (
-    module PureSpace.Common.Game.Projectile.Types,
   )
   where
 
-import PureSpace.Common.Game.Projectile.Types
 
