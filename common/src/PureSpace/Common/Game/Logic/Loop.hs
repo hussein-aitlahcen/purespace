@@ -52,10 +52,10 @@ instance HasTime Timer where
     in lens f g
 
 logicLoop :: (MonadIO m,
-        MonadState s m,
-        HasTime s,
-        HasTimer s)
-       => m ()
+              MonadState s m,
+              HasTime s,
+              HasTimer s)
+          => m ()
 logicLoop = tick *> liftIO (threadDelay . fromIntegral . milliToMicro $ 50) *> logicLoop
 
 nanoToMilli :: Nanoseconds -> Milliseconds
@@ -68,11 +68,11 @@ tick :: (MonadIO m,
          MonadState s m,
          HasTime s,
          HasTimer s)
-        => m ()
+     => m ()
 tick = do
   previous <- get
   now <- liftIO $ toNanoSecs <$> getTime MonotonicRaw
   let delta = nanoToMilli $ now - (previous ^. time)
   modify $ timer .~ Timer now
-  liftIO $ putStrLn $ "Tick with delta " ++ show delta ++ " ms"
+  -- liftIO $ putStrLn $ "Tick with delta " ++ show delta ++ " ms"
 

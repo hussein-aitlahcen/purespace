@@ -31,15 +31,20 @@ module PureSpace.Common.Game.Collision
     Grid (..),
     Collision,
     createSpatialGrid,
+    eliminateSpatialGrid,
     computeCollisions,
+    computeRange,
   )
   where
 
 import           Data.Bits                      (shiftL, (.&.), (.|.))
 import qualified Data.IntMap.Strict             as M
+import qualified Data.Set                       as S
 import qualified Data.Vector                    as V
 import           Linear
 import           PureSpace.Common.Game.Geometry
+import           PureSpace.Common.Game.Types
+import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
 type Collision a  = (a, a)
@@ -50,29 +55,14 @@ type BucketId     = V2 Int
 data Bucket     a = Bucket BucketId (V.Vector a)                                deriving Show
 data Grid       a = Grid GridSize GridDivision BucketSize (M.IntMap (Bucket a)) deriving Show
 
-createSpatialGrid :: (HasPosition s,
-                        HasWidth s,
-                        HasHeight s)
-                    => GridSize
-                    -> GridDivision
-                    -> [s]
-                    -> Grid s
-createSpatialGrid gs gd units =
-  let bs              = gs / gd
-      rc              = rectangleBuckets bs
-      -- (unit, (tl, br))
-      unitsCorners    = zip units $ corners <$> units
-      -- (unit, [bucket_hash])
-      unitsBuckets    = second (fmap bucketHashId . rc) <$> unitsCorners
-      unitsInBucket h = fst <$> filter (elem h . snd) unitsBuckets
-      buckets         = M.fromList [(h, Bucket p $ V.fromList $ unitsInBucket h)
-                                | x <- [0..round gd]
-                                , y <- [0..round gd]
-                                , let p = V2 x y
-                                , let h = bucketHashId p]
-  in Grid gs gd bs buckets
+unitBounds :: (HasPosition s,
+               HasWidth s,
+               HasHeight s)
+           => s
+           -> Rectangle
+unitBounds u = bounds (u ^. position) (fromIntegral $ u ^. width) (fromIntegral $ u ^. height)
 
-rectangleBuckets :: BucketSize -> Corners -> [BucketId]
+rectangleBuckets :: BucketSize -> Rectangle -> [BucketId]
 rectangleBuckets bs (a, b) =
   let pb = positionBucket bs
       (V2 xa ya) = pb a
@@ -84,6 +74,36 @@ positionBucket bs = fmap round . (^/ bs)
 
 bucketHashId :: BucketId -> Int
 bucketHashId (V2 x y) = 32 `shiftL` x .|. y .&. 0xFFFFFFFF
+
+bucketUnits :: Bucket a -> V.Vector a
+bucketUnits (Bucket _ x) = x
+
+eliminateSpatialGrid :: Ord a => Grid a -> S.Set a
+eliminateSpatialGrid (Grid _ _ _ buckets) = S.fromList $ V.toList $ M.foldr' reduction V.empty buckets
+  where
+    reduction b units = bucketUnits b V.++ units
+
+createSpatialGrid :: (HasPosition s,
+                      HasWidth s,
+                      HasHeight s)
+                  => GridSize
+                  -> GridDivision
+                  -> [s]
+                  -> Grid s
+createSpatialGrid gs gd units =
+  let bs               = gs / gd
+      rc               = rectangleBuckets bs
+      -- (unit, (tl, br))
+      unitsWithCorners = zip units $ unitBounds <$> units
+      -- (unit, [bucket_hash])
+      unitsBuckets     = second (fmap bucketHashId . rc) <$> unitsWithCorners
+      unitsInBucket h  = fst <$> filter (elem h . snd) unitsBuckets
+      buckets          = M.fromList [(h, Bucket p $ V.fromList $ unitsInBucket h)
+                                    | x <- [0..round gd]
+                                    , y <- [0..round gd]
+                                    , let p = V2 x y
+                                    , let h = bucketHashId p]
+  in Grid gs gd bs buckets
 
 computeCollisions :: (HasPosition s,
                       HasWidth s,
@@ -100,26 +120,27 @@ computeCollisions (Grid _ _ _ buckets) = M.foldr step V.empty buckets
         go l =
           let exists x = V.elem x acc
           in acc V.++ V.fromList (catMaybes [bool
-                                              (overlaps a b && (not . exists) (a, b))
+                                              (overlaps (unitBounds a) (unitBounds b) && (not . exists) (a, b))
                                               (Just (a, b))
-                                              Nothing |
-                                             j <- [0..l-2],
-                                             k <- [j+1..l-1],
-                                             let a = objs V.! j,
-                                             let b = objs V.! k])
+                                              Nothing
+                                            | j <- [0..l-2]
+                                            , k <- [j+1..l-1]
+                                            , let a = objs V.! j
+                                            , let b = objs V.! k])
 
-
--- TODO: circle to buckets
-circleRangeBuckets :: (HasPosition s,
-                       HasWidth s,
-                       HasHeight s)
-                   => Grid s
-                   -> Position
-                   -> Float
-                   -> [Bucket s]
-circleRangeBuckets (Grid _ _ _ bucks) pos range =
-  let points = [pos + V2 0 range,
-                pos + V2 range 0,
-                pos + V2 (-range) 0,
-                pos + V2 0 (-range)]
-  in []
+computeRange :: (HasPosition s)
+             => Grid s
+             -> s
+             -> FireRange
+             -> V.Vector s
+computeRange (Grid _ _ bs buckets) x r =
+  let p         = x ^. position
+      rangeRect = bounds p r r
+      inRange y = pointInCircle p r $ y ^. position
+      -- Nothing is impossible
+      targetBuckets =
+        let lk = M.lookup . bucketHashId <$> rectangleBuckets bs rangeRect
+            f (Just bucket) = [bucket]
+            f Nothing       = []
+        in join $ f . ($ buckets) <$> lk
+  in V.concat $ V.filter inRange . bucketUnits <$> targetBuckets

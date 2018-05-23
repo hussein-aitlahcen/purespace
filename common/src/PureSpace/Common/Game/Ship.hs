@@ -35,9 +35,9 @@ import           PureSpace.Common.Game.Projectile
 import           PureSpace.Common.Lens            (Lens', lens)
 
 
-data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity                            deriving Show
-data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate FireRange deriving Show
-data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving Show
+data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity                            deriving (Eq, Ord, Show)
+data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate FireRange deriving (Eq, Ord, Show)
+data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving (Eq, Ord, Show)
 data ShipIdentifier     = Fighter
                         | Bomber
                         | Frigate
@@ -50,7 +50,7 @@ data ShipIdentifier     = Fighter
                         | BattleStar
                         | BaseStar
                         | Juggernaut
-                        deriving Show
+                        deriving (Eq, Ord, Show)
 
 class HasShip s where
   ship :: Lens' s Ship

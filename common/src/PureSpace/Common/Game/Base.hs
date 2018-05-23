@@ -44,8 +44,8 @@ type IsHeadquarter = Bool
 
 -- | Base of a player, providers of income and potentially
 -- main target of an opponent
-data Base     = Base BaseType Team Income Health Position     deriving Show
-data BaseType = BaseType MaxHealth IsHeadquarter Width Height deriving Show
+data Base     = Base BaseType Team Income Health Position     deriving (Eq, Ord, Show)
+data BaseType = BaseType MaxHealth IsHeadquarter Width Height deriving (Eq, Ord, Show)
 
 class HasBase b where
   base :: Lens' b Base

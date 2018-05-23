@@ -30,34 +30,44 @@ import           PureSpace.Common.Lens
 data Entity = EntityShip       Ship
             | EntityProjectile Projectile
             | EntityBase       Base
-            deriving Show
+            deriving (Eq, Ord, Show)
+
+instance HasTeam Entity where
+  team =
+    let f (EntityShip       s)    = s    ^. team
+        f (EntityProjectile proj) = proj ^. team
+        f (EntityBase       b)    = b    ^. team
+        g (EntityShip       s) t    = EntityShip       $ s    & team .~ t
+        g (EntityProjectile proj) t = EntityProjectile $ proj & team .~ t
+        g (EntityBase       b) t    = EntityBase       $ b    & team .~ t
+    in lens f g
 
 instance HasPosition Entity where
   position =
-    let f (EntityShip       ship)   = ship ^. position
-        f (EntityProjectile proj)   = proj ^. position
-        f (EntityBase       base)   = base ^. position
-        g (EntityShip       ship) p = EntityShip       $ ship & position .~ p
+    let f (EntityShip       s)    = s    ^. position
+        f (EntityProjectile proj) = proj ^. position
+        f (EntityBase       b)    = b    ^. position
+        g (EntityShip       s) p    = EntityShip       $ s    & position .~ p
         g (EntityProjectile proj) p = EntityProjectile $ proj & position .~ p
-        g (EntityBase       base) p = EntityBase       $ base & position .~ p
+        g (EntityBase       b) p    = EntityBase       $ b    & position .~ p
     in lens f g
 
 instance HasWidth Entity where
   width =
-    let f (EntityShip       ship)   = ship ^. width
-        f (EntityProjectile proj)   = proj ^. width
-        f (EntityBase       base)   = base ^. width
-        g (EntityShip       ship) p = EntityShip       $ ship & width .~ p
-        g (EntityProjectile proj) p = EntityProjectile $ proj & width .~ p
-        g (EntityBase       base) p = EntityBase       $ base & width .~ p
+    let f (EntityShip       s)    = s    ^. width
+        f (EntityProjectile proj) = proj ^. width
+        f (EntityBase       b)    = b    ^. width
+        g (EntityShip       s) w    = EntityShip       $ s    & width .~ w
+        g (EntityProjectile proj) w = EntityProjectile $ proj & width .~ w
+        g (EntityBase       b) w    = EntityBase       $ b    & width .~ w
     in lens f g
 
 instance HasHeight Entity where
   height =
-    let f (EntityShip       ship)   = ship ^. height
-        f (EntityProjectile proj)   = proj ^. height
-        f (EntityBase       base)   = base ^. height
-        g (EntityShip       ship) p = EntityShip       $ ship & height .~ p
-        g (EntityProjectile proj) p = EntityProjectile $ proj & height .~ p
-        g (EntityBase       base) p = EntityBase       $ base & height .~ p
+    let f (EntityShip       s)    = s    ^. height
+        f (EntityProjectile proj) = proj ^. height
+        f (EntityBase       b)    = b    ^. height
+        g (EntityShip       s) h    = EntityShip       $ s    & height .~ h
+        g (EntityProjectile proj) h = EntityProjectile $ proj & height .~ h
+        g (EntityBase       b) h    = EntityBase       $ b    & height .~ h
     in lens f g

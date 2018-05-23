@@ -25,17 +25,17 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
-import qualified Data.Map                        as M
-import qualified Data.Vector                     as V
-import           Graphics.GLUtil.BufferObjects   (makeBuffer)
-import           Graphics.UI.GLUT                as GLUT hiding (Position,
-                                                          ortho2D, position,
-                                                          uniform)
-import           Linear                          hiding (identity)
+import           Data.IORef
+import qualified Data.Map                      as M
+import           Graphics.GLUtil.BufferObjects (makeBuffer)
+import           Graphics.UI.GLUT              as GLUT hiding (One, Position,
+                                                        ortho2D, position,
+                                                        uniform)
+import           Linear                        hiding (identity)
 import           PureSpace.Client.Graphics
 import           PureSpace.Common.Concurrent
-import           PureSpace.Common.Game.Collision
-import           PureSpace.Common.Game.Types
+import           PureSpace.Common.Game.Entity
+import           PureSpace.Common.Game.GameFSM
 import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
@@ -70,14 +70,25 @@ createGameWindow :: (MonadIO m,
                  => m ()
 createGameWindow = do
   initialContextVersion $= openGLVersion
-  atlas                    <- loadAssetJSON ("sprite_atlas", spriteSheetPath)
-  (_, _)                   <- getArgsAndInitialize
-  window                   <- createWindow "PureSpace"
+  atlas              <- loadAssetJSON ("sprite_atlas", spriteSheetPath)
+  (_, _)             <- getArgsAndInitialize
+  window             <- createWindow "PureSpace"
   (program, sprites) <- initContext atlas
-  displayCallback $= debugDisplay program sprites
+  gameRef            <- liftIO $ newIORef game
+  displayCallback $= debugDisplay gameRef program sprites
   idleCallback    $= Just (postRedisplay (Just window))
   loadInputState
   windowLoop
+  where
+    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2   0  0) (V2 0 0),
+                                          Ship sc One 100 0 (V2 500  0) (V2 0 0),
+                                          Ship sc One 100 0 (V2 1000 0) (V2 0 0)] 0 [],
+                      PlayerState Two [] [Ship sc Two 100 0 (V2 1000 1000) (V2 0 0),
+                                          Ship sc Two 100 0 (V2 500  1000) (V2 0 0),
+                                          Ship sc Two 100 0 (V2 0    1000) (V2 0 0)] 0 []]
+      where
+        pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 100 100)
+        sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 50 50) 5 0
 
 loadInputState :: (MonadIO m,
                   MonadState s m,
@@ -153,70 +164,37 @@ vaoByName name sprites =
 {-
 ############################
 Warning: even worse than above, eye bleeding may occurs
+VISUAL TESTING PURPOSES ONLY
 ############################
 -}
-
-entities :: [TestEntity]
-entities = [TestEntity (V2   200  0) 98 75 (V2 (-60)   0),
-            TestEntity (V2 (-200) 0) 98 75 (V2   60    0)]
 
 mapWidth :: GridSize
 mapWidth = 1200
 
-debugDisplay :: Program -> SpritesByName -> DisplayCallback
-debugDisplay program sprites = do
+debugDisplay :: IORef GameState -> Program -> SpritesByName -> DisplayCallback
+debugDisplay gameStateRef program sprites = do
   Size w h          <- GLUT.get windowSize
-  time              <- elapsedTime
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
-  let orangeShip     = "playerShip1_blue.png" `vaoByName` sprites
-      elapsedSeconds = fromIntegral time / 1000
-      stepEntities   =  (\e -> e & position %~ (+ e ^. velocity * elapsedSeconds)) <$> entities
-  debugCollision stepEntities
-  traverse_ (\x -> sequence_ $ fmap ($ x) (displaySprite (fromIntegral w) (fromIntegral h) <$> stepEntities)) orangeShip
+  game <- readIORef gameStateRef
+  let (Just orangeShip) = "playerShip1_blue.png" `vaoByName` sprites -- partial so what ?
+      elapsedSeconds    = 1 / fromIntegral fps -- totally fake so what ?
+      nextGame          = execState (updateGame elapsedSeconds) game
+  writeIORef gameStateRef nextGame
+  traverse_ (displaySprite program (fromIntegral w) (fromIntegral h) orangeShip) (concat $ fmap EntityShip . view ships <$> nextGame ^. players)
   currentProgram $= Nothing
   swapBuffers
   postRedisplay Nothing
+
+displaySprite :: Program -> Float -> Float -> VertexArrayObject -> Entity -> DisplayCallback
+displaySprite program w h vao (EntityShip s) = do
+  uniformP "mProjection" $ ortho2D mapWidth w h
+  uniformP "mModelView"  $ rotate2D (angleOf $ s ^. velocity) $ translate2D (s ^. position) identity
+  bindVertexArrayObject $= Just vao
+  spriteDraw
+  bindVertexArrayObject $= Nothing
   where
     uniformP = uniform program
-    displaySprite w h (TestEntity p _ _ v) vao = do
-      uniformP "mProjection" $ ortho2D mapWidth w h
-      uniformP "mModelView"  $ rotate2D (angleOf v) $ translate2D p identity
-      bindVertexArrayObject $= Just vao
-      spriteDraw
-      bindVertexArrayObject $= Nothing
-      where
-        -- pi/2 because of the sprite initial position :/
-        angleOf (V2 x y) = atan2 y x - pi/2
-
-debugCollision :: [TestEntity] -> DisplayCallback
-debugCollision e = do
-  let grid       = createSpatialGrid mapWidth 20 e
-      collisions = V.toList $ computeCollisions grid
-  traverse_ print collisions
-
-data TestEntity = TestEntity (V2 Float) Int Int (V2 Float) deriving (Show, Eq)
-
-instance HasPosition TestEntity where
-  position =
-    let f (TestEntity a _ _ _)   = a
-        g (TestEntity _ b c d) a = TestEntity a b c d
-    in lens f g
-
-instance HasVelocity TestEntity where
-  velocity =
-    let f (TestEntity _ _ _ d)   = d
-        g (TestEntity a b c _) d = TestEntity a b c d
-    in lens f g
-
-instance HasWidth TestEntity where
-  width =
-    let f (TestEntity _ b _ _)   = b
-        g (TestEntity a _ c d) b = TestEntity a b c d
-    in lens f g
-
-instance HasHeight TestEntity where
-  height =
-    let f (TestEntity _ _ c _)   = c
-        g (TestEntity a b _ d) c = TestEntity a b c d
-    in lens f g
+    -- pi/2 because of the sprite initial position :/
+    angleOf (V2 x y) = atan2 y x - pi/2
+displaySprite _ _ _ _ _ = pure ()

@@ -25,6 +25,7 @@ module PureSpace.Common.Game.Types
     Position,
     Velocity,
     MaxVelocity ,
+    Direction,
     FireRate,
     FireRange,
     FireCooldown,
@@ -57,10 +58,10 @@ import           PureSpace.Common.Lens (Lens')
   FireCooldown = next available shot
 -}
 
-
 type Position     = V2 Float
 type Velocity     = V2 Float
 type MaxVelocity  = Velocity
+type Direction    = Velocity
 type FireRate     = Float
 type FireCooldown = Float
 type FireRange    = Float

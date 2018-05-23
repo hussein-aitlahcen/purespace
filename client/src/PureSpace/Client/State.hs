@@ -17,33 +17,40 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Game.State
+module PureSpace.Client.State
   (
     module PureSpace.Client.Graphics.State,
-    GameState (..),
-    initialGameState
+    ClientState (..),
+    initialClientState
   )
   where
 
 import           PureSpace.Client.Graphics.State
 import           PureSpace.Common.Lens           (lens)
+import           PureSpace.Common.Game.State
 
-newtype GameState = GameState GraphicsState
+data ClientState = ClientState GameState GraphicsState
 
-instance HasGraphicsState GameState where
-  graphicsState =
-    let f (GameState x)   = x
-        g (GameState _) x = GameState x
+instance HasGameState ClientState where
+  gameState =
+    let f (ClientState x _)   = x
+        g (ClientState _ y) x = ClientState x y
     in lens f g
 
-instance HasShaderState GameState where
+instance HasGraphicsState ClientState where
+  graphicsState =
+    let f (ClientState _ y)   = y
+        g (ClientState x _) y = ClientState x y
+    in lens f g
+
+instance HasShaderState ClientState where
   shaderState = graphicsState . shaderState
 
-instance HasShaderProgramState GameState where
+instance HasShaderProgramState ClientState where
   shaderProgramState = graphicsState . shaderProgramState
 
-instance HasDeviceState GameState where
+instance HasDeviceState ClientState where
   deviceState = graphicsState . deviceState
 
-initialGameState :: GameState
-initialGameState = GameState initialGraphicsState
+initialClientState :: ClientState
+initialClientState = ClientState (GameState []) initialGraphicsState

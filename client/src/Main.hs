@@ -19,7 +19,7 @@
 
 module Main where
 
-import           PureSpace.Client.Game
+import           PureSpace.Client
 
 main :: IO ()
-main = runGame
+main = runClient

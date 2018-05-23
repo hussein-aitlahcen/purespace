@@ -70,26 +70,26 @@ library
 
 executable purespace-client
   main-is:             Main.hs
-  other-modules:       PureSpace.Client.Graphics.Assets
+  other-modules:       PureSpace.Client
+                     , PureSpace.Client.Error
+                     , PureSpace.Client.State
+                     , PureSpace.Client.Config
+                     , PureSpace.Client.Graphics
+                     , PureSpace.Client.Graphics.Error
+                     , PureSpace.Client.Graphics.State
+                     , PureSpace.Client.Graphics.Window
+                     , PureSpace.Client.Graphics.Assets
                      , PureSpace.Client.Graphics.Assets.Error
-                     , PureSpace.Client.Graphics.Program.Shader
-                     , PureSpace.Client.Graphics.Program.Shader.Error
-                     , PureSpace.Client.Graphics.Program.Shader.State
                      , PureSpace.Client.Graphics.Program
                      , PureSpace.Client.Graphics.Program.Error
                      , PureSpace.Client.Graphics.Program.State
                      , PureSpace.Client.Graphics.Program.Uniform
-                     , PureSpace.Client.Game
-                     , PureSpace.Client.Game.Error
-                     , PureSpace.Client.Game.State
-                     , PureSpace.Client.Game.Config
-                     , PureSpace.Client.Graphics
+                     , PureSpace.Client.Graphics.Program.Shader
+                     , PureSpace.Client.Graphics.Program.Shader.Error
+                     , PureSpace.Client.Graphics.Program.Shader.State
                      , PureSpace.Client.Graphics.Device
                      , PureSpace.Client.Graphics.Device.State
                      , PureSpace.Client.Graphics.Device.Input
-                     , PureSpace.Client.Graphics.Error
-                     , PureSpace.Client.Graphics.State
-                     , PureSpace.Client.Graphics.Window
                      , PureSpace.Client.Graphics.Maths
                      , PureSpace.Client.Graphics.Maths.Matrix
                      , PureSpace.Client.Graphics.Memory

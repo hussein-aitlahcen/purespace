@@ -17,10 +17,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Game.Config
+module PureSpace.Client.Config
   (
-    GameConfig (..)
+    ClientConfig (..)
   )
   where
 
-data GameConfig = GameConfig deriving Show
+data ClientConfig = ClientConfig deriving Show

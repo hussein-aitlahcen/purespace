@@ -19,50 +19,50 @@
 
 {-# LANGUAGE LambdaCase #-}
 
-module PureSpace.Client.Game.Error
+module PureSpace.Client.Error
   (
     module PureSpace.Common.Resource.Error,
     module PureSpace.Client.Graphics.Error,
-    GameError (..),
-    AsGameError (..),
+    ClientError (..),
+    AsClientError (..),
   )
   where
 
 import           PureSpace.Client.Graphics.Error
-import           PureSpace.Common.Resource.Error
 import           PureSpace.Common.Lens           (Prism', prism)
+import           PureSpace.Common.Resource.Error
 
-data GameError = GameGraphicsError GraphicsError
-               | GameResourceError ResourceError
-               deriving Show
+data ClientError = ClientGraphicsError GraphicsError
+                 | ClientResourceError ResourceError
+                 deriving Show
 
-class AsGameError s where
-  gameError :: Prism' s GameError
+class AsClientError s where
+  gameError :: Prism' s ClientError
 
-instance AsGameError GameError where
+instance AsClientError ClientError where
   gameError = id
 
-instance AsResourceError GameError where
+instance AsResourceError ClientError where
   resourceError =
-    let f = GameResourceError
+    let f = ClientResourceError
         g = \case
-          GameResourceError x -> Right x
+          ClientResourceError x -> Right x
           x                   -> Left  x
     in prism f g
 
-instance AsGraphicsError GameError where
+instance AsGraphicsError ClientError where
   graphicsError =
-    let f = GameGraphicsError
+    let f = ClientGraphicsError
         g = \case
-          GameGraphicsError x -> Right x
+          ClientGraphicsError x -> Right x
           x                   -> Left  x
     in prism f g
 
-instance AsAssetError GameError where
+instance AsAssetError ClientError where
   assetError = graphicsError . assetError
 
-instance AsShaderError GameError where
+instance AsShaderError ClientError where
   shaderError = graphicsError . shaderError
 
-instance AsShaderProgramError GameError where
+instance AsShaderProgramError ClientError where
   shaderProgramError = graphicsError . shaderProgramError

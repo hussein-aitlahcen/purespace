@@ -1,4 +1,4 @@
--- Game.hs ---
+-- Client.hs ---
 
 -- Copyright (C) 2018 Hussein Ait-Lahcen
 
@@ -17,19 +17,19 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module PureSpace.Client.Game
+module PureSpace.Client
   (
-    GameConfig (..),
-    GameState (..),
-    GameError (..),
-    runGame
+    ClientConfig (..),
+    ClientState (..),
+    ClientError (..),
+    runClient
   )
   where
 
-import           PureSpace.Client.Game.Config
-import           PureSpace.Client.Game.Error
-import           PureSpace.Client.Game.State
+import           PureSpace.Client.Config
+import           PureSpace.Client.Error
 import           PureSpace.Client.Graphics.Window
+import           PureSpace.Client.State
 import           PureSpace.Common.Concurrent
 import           PureSpace.Common.Game.Logic.Loop
 import           PureSpace.Common.Lens
@@ -37,10 +37,10 @@ import           System.Clock
 
 runGraphics :: IO ()
 runGraphics =
-  let config = GameConfig
-      go = evalStateT (runReaderT (runExceptT createGameWindow) config) initialGameState
+  let config = ClientConfig
+      go = evalStateT (runReaderT (runExceptT createGameWindow) config) initialClientState
       displayResult res = case res of
-        Left message -> print (message :: GameError)
+        Left message -> print (message :: ClientError)
         Right _      -> putStrLn "Unseen string"
   in go >>= displayResult
 
@@ -57,10 +57,10 @@ forkLoop thread = do
     _ <- forkFinally thread (\_ -> putMVar handle ())
     return handle
 
-runGame :: IO ()
-runGame = do
+runClient :: IO ()
+runClient = do
   graphicThread <- forkLoop $ void runGraphics
-  logicThread <- forkLoop runLogic
+  logicThread   <- forkLoop runLogic
   -- Waiting for all threads to finish
   mapM_ takeMVar [graphicThread, logicThread]
   putStrLn "Finished"

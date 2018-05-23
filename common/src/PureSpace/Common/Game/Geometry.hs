@@ -19,49 +19,52 @@
 
 module PureSpace.Common.Game.Geometry
   (
-    HasHeight(..),
-    HasPosition (..),
-    HasWidth (..),
-    Position,
     V2 (..),
-    Corners,
-    corners,
-    overlaps
+    Position,
+    Direction,
+    Rectangle,
+    bounds,
+    overlaps,
+    pointInRectangle,
+    pointInCircle,
+    direction
   )
   where
 
-import           PureSpace.Common.Game.Types (HasHeight (..), HasPosition (..),
-                                              HasWidth (..), Position, V2 (..))
-import           PureSpace.Common.Lens       ((^.))
+import           Linear                      (V2 (..))
+import           PureSpace.Common.Game.Types (Direction, Position)
 
 -- top left, bot right
-type Corners = (Position, Position)
+type Rectangle = (Position, Position)
 
-corners :: (HasPosition s,
-            HasWidth s,
-            HasHeight s)
-        => s
-        -> Corners
-corners x =
-  let p = x ^. position
-      w = x ^. width
-      h = x ^. height
-      q = (/ 2) . fromIntegral <$> V2 w h
+bounds :: Position -> Float -> Float -> Rectangle
+bounds p w h =
+  let q = (/ 2) <$> V2 w h
       pq = (+ p) . (* q)
   in (pq $ V2 (-1)  (-1),
       pq $ V2   1     1)
 
-overlaps :: (HasPosition s,
-             HasWidth s,
-             HasHeight s)
-         => s
-         -> s
-         -> Bool
-overlaps sa sb =
-  let (aa, ba) = corners sa
-      (ab, bb) = corners sb
-      overlap (V2 x y) (V2 a b) (V2 c d) = x >= a && x <= c && y >= b && y <= d
-  in overlap aa ab bb ||
-     overlap ba ab bb ||
-     overlap ab aa ba ||
-     overlap bb aa ba
+pointInCircle :: Position -> Float -> Position -> Bool
+pointInCircle (V2 cx cy) r (V2 x y) =
+  let dx = abs (x - cx)
+      dy = abs (y - cy)
+  in dx*dx + dy*dy < r*r
+
+
+pointInRectangle :: Rectangle -> Position -> Bool
+pointInRectangle (V2 a b, V2 c d) (V2 x y) =
+  let xIsInside = x >= a && x <= c
+      yIsInside = y >= b && y <= d
+  in xIsInside && yIsInside
+
+overlaps :: Rectangle -> Rectangle -> Bool
+overlaps p@(aa, ab) q@(ba, bb) =
+  let pContains = pointInRectangle p
+      qContains = pointInRectangle q
+  in qContains aa ||
+     qContains ba ||
+     pContains ab ||
+     pContains bb
+
+direction :: Position -> Position -> Direction
+direction a b = b - a
