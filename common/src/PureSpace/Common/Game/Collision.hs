@@ -39,6 +39,7 @@ module PureSpace.Common.Game.Collision
 
 import           Data.Bits                      (shiftL, (.&.), (.|.))
 import qualified Data.IntMap.Strict             as M
+import qualified Data.PQueue.Prio.Min           as PQ
 import qualified Data.Set                       as S
 import qualified Data.Vector                    as V
 import           Linear
@@ -128,19 +129,25 @@ computeCollisions (Grid _ _ _ buckets) = M.foldr step V.empty buckets
                                             , let a = objs V.! j
                                             , let b = objs V.! k])
 
-computeRange :: (HasPosition s)
+vectorToPQueue :: Ord k => (a -> k) -> V.Vector a -> PQ.MinPQueue k a
+vectorToPQueue f entities = V.foldr' step PQ.empty entities
+  where
+    step x = PQ.insert (f x) x
+
+computeRange :: (HasPosition a, HasPosition s)
              => Grid s
-             -> s
+             -> a
              -> FireRange
-             -> V.Vector s
+             -> PQ.MinPQueue Distance s
 computeRange (Grid _ _ bs buckets) x r =
   let p         = x ^. position
       rangeRect = bounds p r r
       inRange y = pointInCircle p r $ y ^. position
+      d y = distance (y ^. position) (x ^. position)
       -- Nothing is impossible
       targetBuckets =
-        let lk = M.lookup . bucketHashId <$> rectangleBuckets bs rangeRect
+        let lk              = M.lookup . bucketHashId <$> rectangleBuckets bs rangeRect
             f (Just bucket) = [bucket]
             f Nothing       = []
         in join $ f . ($ buckets) <$> lk
-  in V.concat $ V.filter inRange . bucketUnits <$> targetBuckets
+  in PQ.unions $ vectorToPQueue d . V.filter inRange . bucketUnits <$> targetBuckets

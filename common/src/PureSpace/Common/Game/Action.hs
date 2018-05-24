@@ -17,8 +17,29 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+{-# LANGUAGE GADTs #-}
+
 module PureSpace.Common.Game.Action
   (
+    GameAction (..),
   )
   where
 
+import           PureSpace.Common.Game.Ship
+import           PureSpace.Common.Prelude
+
+data GameAction where
+  ShotTarget :: (HasPosition p,
+                 HasTeam p,
+                 HasFireRate p,
+                 HasFireCooldown p,
+                 HasProjectileCaracteristics p,
+                 HasPosition t,
+                 Show t,
+                 Show p)
+             => p
+             -> t
+             -> GameAction
+
+instance Show GameAction where
+  show (ShotTarget a b) = "shot: " <> show a <> " => " <> show b

@@ -6,7 +6,7 @@ let
 
   f = { mkDerivation, aeson, base, bytestring, clock, containers
       , directory, GLUT, GLUtil, JuicyPixels, lens, linear, mtl, OpenGL
-      , OpenGLRaw, stdenv, stm, vector
+      , OpenGLRaw, pqueue, stdenv, stm, vector
       }:
       mkDerivation {
         pname = "purespace";
@@ -15,11 +15,11 @@ let
         isLibrary = true;
         isExecutable = true;
         libraryHaskellDepends = [
-          base clock containers directory lens linear mtl stm vector
+          base clock containers directory lens linear mtl pqueue stm vector
         ];
         executableHaskellDepends = [
           aeson base bytestring clock containers GLUT GLUtil JuicyPixels
-          linear OpenGL OpenGLRaw stm vector
+          linear OpenGL OpenGLRaw pqueue stm vector
         ];
         testHaskellDepends = [ base ];
         homepage = "http://github.com/hussein-aitlahcen/purespace";

@@ -24,6 +24,7 @@ module PureSpace.Common.Monad
     module Control.Monad.IO.Class,
     module Control.Monad.Except,
     module Control.Monad.Reader,
+    module Control.Monad.Writer.Strict,
     module Control.Monad.State.Strict,
     module Control.Monad
   )
@@ -36,3 +37,4 @@ import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Control.Monad.State.Strict
+import           Control.Monad.Writer.Strict hiding ((<>))

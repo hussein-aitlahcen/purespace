@@ -80,15 +80,15 @@ createGameWindow = do
   loadInputState
   windowLoop
   where
-    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2   0  0) (V2 0 0),
-                                          Ship sc One 100 0 (V2 500  0) (V2 0 0),
-                                          Ship sc One 100 0 (V2 1000 0) (V2 0 0)] 0 [],
-                      PlayerState Two [] [Ship sc Two 100 0 (V2 1000 1000) (V2 0 0),
-                                          Ship sc Two 100 0 (V2 500  1000) (V2 0 0),
-                                          Ship sc Two 100 0 (V2 0    1000) (V2 0 0)] 0 []]
+    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2 0 400) (V2 0 0),
+                                          Ship sc One 100 0 (V2 0 200) (V2 0 0),
+                                          Ship sc One 100 0 (V2 0 0) (V2 0 0)] 0 [],
+                      PlayerState Two [] [Ship sc Two 100 0 (V2 1000 400) (V2 0 0),
+                                          Ship sc Two 100 0 (V2 1000 200) (V2 0 0),
+                                          Ship sc Two 100 0 (V2 1000   0) (V2 0 0)] 0 []]
       where
-        pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 100 100)
-        sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 50 50) 5 0
+        pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 500 500)
+        sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 500
 
 loadInputState :: (MonadIO m,
                   MonadState s m,
@@ -156,8 +156,8 @@ createGraphicsSprite buffer i sprite =
   <*> pure sprite
   <*> spriteVAO buffer i
 
-vaoByName :: SpriteName-> SpritesByName -> Maybe VertexArrayObject
-vaoByName name sprites =
+vaoByName :: SpritesByName -> SpriteName -> Maybe VertexArrayObject
+vaoByName sprites name =
   let vao (GraphicsSprite _ v) = v
   in fmap vao $ name `M.lookup` sprites
 
@@ -168,26 +168,33 @@ VISUAL TESTING PURPOSES ONLY
 ############################
 -}
 
+-- TODO: game config
 mapWidth :: GridSize
-mapWidth = 1200
+mapWidth = 3000
 
 debugDisplay :: IORef GameState -> Program -> SpritesByName -> DisplayCallback
 debugDisplay gameStateRef program sprites = do
-  Size w h          <- GLUT.get windowSize
+  Size w h <- GLUT.get windowSize
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
   game <- readIORef gameStateRef
-  let (Just orangeShip) = "playerShip1_blue.png" `vaoByName` sprites -- partial so what ?
-      elapsedSeconds    = 1 / fromIntegral fps -- totally fake so what ?
-      nextGame          = execState (updateGame elapsedSeconds) game
+  let elapsedSeconds                     = 1 / fromIntegral fps -- totally fake so what ?
+      (grid, nextGame)                           = runState (updateGame elapsedSeconds) game
+      (Just shipVAO)                     = sprites `vaoByName` "playerShip1_blue.png"
+      (Just projVAO)                     = sprites `vaoByName` "laserBlue05.png"
+      display :: (HasPosition s, HasVelocity s) => VertexArrayObject -> s -> DisplayCallback
+      display                            = displaySprite program (fromIntegral w) (fromIntegral h)
+      displayEntity (EntityShip s)       = display shipVAO s
+      displayEntity (EntityProjectile p) = display projVAO p
+      displayEntity _                    = putStrLn "bases not drawable yet"
   writeIORef gameStateRef nextGame
-  traverse_ (displaySprite program (fromIntegral w) (fromIntegral h) orangeShip) (concat $ fmap EntityShip . view ships <$> nextGame ^. players)
+  traverse_ displayEntity $ eliminateSpatialGrid grid
   currentProgram $= Nothing
   swapBuffers
   postRedisplay Nothing
 
-displaySprite :: Program -> Float -> Float -> VertexArrayObject -> Entity -> DisplayCallback
-displaySprite program w h vao (EntityShip s) = do
+displaySprite :: (HasPosition s, HasVelocity s) => Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
+displaySprite program w h vao s = do
   uniformP "mProjection" $ ortho2D mapWidth w h
   uniformP "mModelView"  $ rotate2D (angleOf $ s ^. velocity) $ translate2D (s ^. position) identity
   bindVertexArrayObject $= Just vao
@@ -197,4 +204,3 @@ displaySprite program w h vao (EntityShip s) = do
     uniformP = uniform program
     -- pi/2 because of the sprite initial position :/
     angleOf (V2 x y) = atan2 y x - pi/2
-displaySprite _ _ _ _ _ = pure ()

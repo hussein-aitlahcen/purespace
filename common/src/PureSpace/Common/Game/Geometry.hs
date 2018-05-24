@@ -50,7 +50,6 @@ pointInCircle (V2 cx cy) r (V2 x y) =
       dy = abs (y - cy)
   in dx*dx + dy*dy < r*r
 
-
 pointInRectangle :: Rectangle -> Position -> Bool
 pointInRectangle (V2 a b, V2 c d) (V2 x y) =
   let xIsInside = x >= a && x <= c

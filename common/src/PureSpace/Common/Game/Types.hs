@@ -9,6 +9,7 @@
 -- as published by the Free Software Foundation; either version 3
 -- of the License, or (at your option) any later version.
 
+
 -- This program is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -21,6 +22,7 @@ module PureSpace.Common.Game.Types
   (
     V2 (..),
     Team (..),
+    Distance,
     DeltaTime,
     Position,
     Velocity,
@@ -58,10 +60,11 @@ import           PureSpace.Common.Lens (Lens')
   FireCooldown = next available shot
 -}
 
+type Distance     = Float
 type Position     = V2 Float
 type Velocity     = V2 Float
 type MaxVelocity  = Velocity
-type Direction    = Velocity
+type Direction    = V2 Float
 type FireRate     = Float
 type FireCooldown = Float
 type FireRange    = Float
