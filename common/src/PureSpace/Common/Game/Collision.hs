@@ -155,7 +155,7 @@ computeRange (Grid _ _ _ buckets) x InfiniteRange =
   let d y = distance (y ^. position) (x ^. position)
       reduceBucket =
         let step y = PQ.insert (d y) y
-        in V.foldr step PQ.empty . bucketUnits
+        in V.foldr' step PQ.empty . bucketUnits
       reduceBucketMap =
         let step y = PQ.union (reduceBucket y)
         in M.foldr' step PQ.empty
