@@ -78,19 +78,21 @@ createGameWindow = do
   (_, _)             <- getArgsAndInitialize
   window             <- createWindow "PureSpace"
   (program, sprites) <- initContext atlas
-  gameRef            <- liftIO $ newIORef game
   gameConf           <- view gameConfig
+  gameRef            <- liftIO $ newIORef (game gameConf)
   displayCallback $= debugDisplay gameConf gameRef program sprites
   idleCallback    $= Just (postRedisplay (Just window))
   loadInputState
   windowLoop
   where
-    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
-                                          Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
-                                          Ship sc One 100 0 (V2 0 0) (V2 0 0) 0] 0 [],
-                      PlayerState Two [] [Ship sc Two 100 0 (V2 1500 1000) (V2 0 0) 0,
-                                          Ship sc Two 100 0 (V2 1500 500) (V2 0 0) 0,
-                                          Ship sc Two 100 0 (V2 1500 0) (V2 0 0) 0] 0 []]
+    game (GameConfig a b) =
+      GameState (createSpatialGrid a b [])
+      [PlayerState One [] [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
+                           Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
+                           Ship sc One 100 0 (V2 0 0) (V2 0 0) 0] 0 [],
+       PlayerState Two [] [Ship sc Two 100 0 (V2 1500 1000) (V2 0 0) 0,
+                           Ship sc Two 100 0 (V2 1500 500) (V2 0 0) 0,
+                           Ship sc Two 100 0 (V2 1500 0) (V2 0 0) 0] 0 []]
       where
         pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 500 500)
         sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 500
@@ -187,7 +189,7 @@ debugDisplay config gameStateRef program sprites = do
   currentProgram $= Just program
   game <- liftIO $ readIORef gameStateRef
   let elapsedSeconds   = 1 / fromIntegral fps -- totally fake so what ?
-      (grid, nextGame) = runState (runReaderT (updateGame elapsedSeconds) config) game
+      nextGame = execState (runReaderT (updateGame elapsedSeconds) config) game
       (Just shipVAO)   = sprites `vaoByName` "playerShip1_blue.png"
       (Just projVAO)   = sprites `vaoByName` "laserBlue05.png"
       display :: (HasPosition s, HasVelocity s, HasAngle s) => VertexArrayObject -> s -> DisplayCallback
@@ -196,7 +198,7 @@ debugDisplay config gameStateRef program sprites = do
       displayEntity (EntityProjectile p) = display projVAO p
       displayEntity _                    = putStrLn "bases not drawable yet"
   writeIORef gameStateRef nextGame
-  traverse_ displayEntity $ eliminateSpatialGrid grid
+  traverse_ displayEntity $ eliminateSpatialGrid (nextGame ^. spatialGrid)
   currentProgram $= Nothing
   swapBuffers
   postRedisplay Nothing

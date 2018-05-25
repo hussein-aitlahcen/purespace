@@ -22,17 +22,25 @@ module PureSpace.Common.Game.State
     module PureSpace.Common.Game.Player.State,
     GameState (..),
     HasGameState (..),
+    HasSpatialGrid (..),
     HasPlayers (..),
+    initialGameState
   )
   where
 
+import           PureSpace.Common.Game.Collision
+import           PureSpace.Common.Game.Entity
+import           PureSpace.Common.Game.Config
 import           PureSpace.Common.Game.Player.State
 import           PureSpace.Common.Lens              (Lens', lens)
 
 -- | The state of the game, namely the current situation
 -- of the players. Victory or loss condition can be inferred
 -- from the situation of players at any given time.
-data GameState = GameState [PlayerState]
+data GameState = GameState (Grid Entity) [PlayerState]
+
+initialGameState :: GameConfig -> GameState
+initialGameState (GameConfig gs gd)= GameState (createSpatialGrid gs gd []) []
 
 -- To ponder: maybe an `Ixed` would be better here ?
 -- This might need to be changed. We will see what's more
@@ -44,11 +52,20 @@ class HasGameState g where
 instance HasGameState GameState where
   gameState = id
 
+class HasSpatialGrid s where
+  spatialGrid :: Lens' s (Grid Entity)
+
 class HasPlayers p where
   players :: Lens' p [PlayerState]
 
 instance HasPlayers GameState where
   players =
-    let f (GameState a) = a
-        g _ = GameState
+    let f (GameState _ b)   = b
+        g (GameState a _) b = GameState a b
+    in lens f g
+
+instance HasSpatialGrid GameState where
+  spatialGrid =
+    let f (GameState a _)   = a
+        g (GameState _ b) a = GameState a b
     in lens f g

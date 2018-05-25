@@ -58,18 +58,20 @@ type GameActionWriter m = MonadWriter [GameAction] m
 updateGame :: (MonadState s m,
                MonadReader r m,
                HasGameState s,
+               HasSpatialGrid s,
                HasPlayers s,
                HasGameConfig r,
                HasGridSize r,
                HasGridDivision r)
            => DeltaTime
-           -> m (Grid Entity)
+           -> m ()
 updateGame dt = do
   gameMapSize     <- view gridSize
   gameMapDivision <- view gridDivision
-  grid            <- createSpatialGrid gameMapSize gameMapDivision <$> getEntities
-  gameState %= updatePlayers dt grid
-  pure grid
+  gameState %= updatePlayers dt
+  newGrid <- createSpatialGrid gameMapSize gameMapDivision <$> getEntities
+  gameState %= (spatialGrid .~ newGrid)
+  pure ()
 
 enemyTeamOf :: HasTeam s => Team -> (s -> Bool)
 enemyTeamOf t = (/=) t . view team
@@ -103,12 +105,12 @@ getTeamEntities t = do
     ofTeam :: (HasTeam s) => [s] -> [s]
     ofTeam = filter (allyTeamOf t)
 
-updatePlayers :: (HasPlayers s)
+updatePlayers :: (HasSpatialGrid s,
+                  HasPlayers s)
               => DeltaTime
-              -> Grid Entity
               -> s
               -> s
-updatePlayers dt grid = players %~ fmap (updatePlayer dt grid)
+updatePlayers dt x = x & players %~ fmap (updatePlayer dt (x ^. spatialGrid))
 
 updatePlayer :: DeltaTime
              -> Grid Entity

@@ -19,6 +19,7 @@
 
 module PureSpace.Client.Config
   (
+    module PureSpace.Common.Game.Config,
     ClientConfig (..),
     defaultClientConfig
   )

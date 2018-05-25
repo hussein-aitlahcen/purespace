@@ -26,8 +26,9 @@ module PureSpace.Client.State
   where
 
 import           PureSpace.Client.Graphics.State
-import           PureSpace.Common.Lens           (lens)
+import           PureSpace.Common.Game.Config
 import           PureSpace.Common.Game.State
+import           PureSpace.Common.Lens           (lens)
 
 data ClientState = ClientState GameState GraphicsState
 
@@ -52,5 +53,5 @@ instance HasShaderProgramState ClientState where
 instance HasDeviceState ClientState where
   deviceState = graphicsState . deviceState
 
-initialClientState :: ClientState
-initialClientState = ClientState (GameState []) initialGraphicsState
+initialClientState :: GameConfig -> ClientState
+initialClientState gameConf = ClientState (initialGameState gameConf) initialGraphicsState
