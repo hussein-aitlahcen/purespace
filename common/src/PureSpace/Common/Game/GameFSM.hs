@@ -136,17 +136,15 @@ updatePlayer dt grid player =
             in round $ fromIntegral incomePerSecond / dt
       in s & cash +~ incomeDt
     executeAction :: GameAction -> Endo PlayerState
-    executeAction (ShotTarget a b) = Endo go
-      where
-        go =
-          let shotPosition   = a ^. position
-              targetPosition = b ^. position
-              projCarac      = a ^. projectileCaracteristics
-              projMaxV       = projCarac ^. maxVelocity
-              dir            = (normalize (direction shotPosition targetPosition) * projMaxV)
-              phi              = directionAngle dir 0
-              newProj        = Projectile projCarac (a ^. team) shotPosition dir phi
-          in projectiles %~ (:) newProj
+    executeAction (ShotTarget a b) =
+      Endo $ let shotPosition   = a ^. position
+                 targetPosition = b ^. position
+                 projCarac      = a ^. projectileCaracteristics
+                 projMaxV       = projCarac ^. maxVelocity
+                 dir            = (normalize (direction shotPosition targetPosition) * projMaxV)
+                 phi              = directionAngle dir 0
+                 newProj        = Projectile projCarac (a ^. team) shotPosition dir phi
+             in projectiles %~ (:) newProj
 
 updateShips :: (GameActionWriter m,
                 HasShips s)
