@@ -72,9 +72,9 @@ updateGame dt = do
   pure ()
 
 nextGrid :: (MonadState s m,
-            HasGameState s,
-            HasPlayers s,
-            HasSpatialGrid s)
+             HasGameState s,
+             HasPlayers s,
+             HasSpatialGrid s)
         => m (Grid Entity)
 nextGrid = do
   (Grid gs gd _ _ ) <- use spatialGrid
