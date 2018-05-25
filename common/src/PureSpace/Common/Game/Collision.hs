@@ -128,7 +128,7 @@ computeCollisions (Grid _ _ _ buckets) = M.foldr step S.empty buckets
                                                    , let b = objs V.! k])
 
 vectorToPQueue :: Ord k => (a -> k) -> V.Vector a -> PQ.MinPQueue k a
-vectorToPQueue f entities = V.foldr' step PQ.empty entities
+vectorToPQueue f = V.foldr' step PQ.empty
   where
     step x = PQ.insert (f x) x
 

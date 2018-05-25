@@ -154,17 +154,17 @@ updateShipObjective :: GameActionWriter m
                     -> Ship
                     -> m Ship
 updateShipObjective dt grid s@(Ship _ t _ _ _ _) =
-  let resetFireCooldown = fireCooldown .~ (1 / s ^. fireRate)
-      lowerFireCooldown = fireCooldown -~ dt
-      resetVelocity     = velocity .~ V2 0 0
+  let resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
+      reduceFireCooldown = fireCooldown -~ dt
+      resetVelocity      = velocity .~ V2 0 0
   in case enemyInRange of
        Just (EntityShip enemy) ->
          if s ^. fireCooldown <= 0
          then do
            tell [ShotTarget s enemy]
-           pure $ s & resetFireCooldown . resetVelocity
+           pure $ s & resetFireCooldown  . resetVelocity
          else
-           pure $ s & lowerFireCooldown . resetVelocity
+           pure $ s & reduceFireCooldown . resetVelocity
 
        Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire aswell ?
 
