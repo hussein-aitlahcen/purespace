@@ -22,5 +22,8 @@ module PureSpace.Common.Game.Config
   )
   where
 
-data GameConfig = GameConfig Width
+import           PureSpace.Common.Game.Types
+import           PureSpace.Common.Game.Collision
+
+data GameConfig = GameConfig GridSize GridDivision
 

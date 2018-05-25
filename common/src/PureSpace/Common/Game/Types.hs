@@ -16,12 +16,14 @@
 -- GNU General Public License for more details.
 
 -- You should have received a copy of the GNU General Public License
+
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 module PureSpace.Common.Game.Types
   (
     V2 (..),
     Team (..),
+    MapSize,
     Angle,
     Distance,
     DeltaTime,
@@ -62,6 +64,7 @@ import           PureSpace.Common.Lens (Lens')
   FireCooldown = next available shot
 -}
 
+type MapSize      = V2 Float
 type Angle        = Float
 type Distance     = Float
 type Position     = V2 Float
