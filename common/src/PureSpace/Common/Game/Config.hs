@@ -19,11 +19,38 @@
 
 module PureSpace.Common.Game.Config
   (
+    GameConfig (..),
+    HasGameConfig (..),
+    HasGridSize (..),
+    HasGridDivision (..)
   )
   where
 
-import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Game.Collision
+import           PureSpace.Common.Lens
 
 data GameConfig = GameConfig GridSize GridDivision
 
+class HasGameConfig s where
+  gameConfig :: Lens' s GameConfig
+
+class HasGridSize s where
+  gridSize :: Lens' s GridSize
+
+class HasGridDivision s where
+  gridDivision :: Lens' s GridDivision
+
+instance HasGameConfig GameConfig where
+  gameConfig = id
+
+instance HasGridSize GameConfig where
+  gridSize =
+    let f (GameConfig a _)   = a
+        g (GameConfig _ b) a = GameConfig a b
+    in lens f g
+
+instance HasGridDivision GameConfig where
+  gridDivision =
+    let f (GameConfig _ b)   = b
+        g (GameConfig a _) b = GameConfig a b
+    in lens f g
