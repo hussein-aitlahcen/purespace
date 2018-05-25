@@ -139,6 +139,7 @@ vectorToPQueue f = V.foldr' step PQ.empty
   where
     step x = PQ.insert (f x) x
 
+-- TODO: make the grid foldable please^2
 computeRange :: (HasPosition a, HasPosition s)
              => Grid s
              -> a
@@ -157,6 +158,7 @@ computeRange (Grid _ _ bs buckets) x (FiniteRange r) =
         in join $ f . ($ buckets) <$> lk
   in PQ.unions $ vectorToPQueue d . V.filter inRange . bucketUnits <$> targetBuckets
 
+-- TODO: make the grid foldable please^3
 computeRange (Grid _ _ _ buckets) x InfiniteRange =
   let d y = distance (y ^. position) (x ^. position)
       reduceBucket =
