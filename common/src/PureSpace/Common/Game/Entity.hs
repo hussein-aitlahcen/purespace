@@ -71,3 +71,13 @@ instance HasHeight Entity where
         g (EntityProjectile proj) h = EntityProjectile $ proj & height .~ h
         g (EntityBase       b) h    = EntityBase       $ b    & height .~ h
     in lens f g
+
+instance HasAngle Entity where
+  angle =
+    let f (EntityShip       s)    = s    ^. angle
+        f (EntityProjectile proj) = proj ^. angle
+        f (EntityBase       b)    = b    ^. angle
+        g (EntityShip       s) h    = EntityShip       $ s    & angle .~ h
+        g (EntityProjectile proj) h = EntityProjectile $ proj & angle .~ h
+        g (EntityBase       b) h    = EntityBase       $ b    & angle .~ h
+    in lens f g

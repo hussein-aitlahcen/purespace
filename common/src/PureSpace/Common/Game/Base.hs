@@ -44,8 +44,8 @@ type IsHeadquarter = Bool
 
 -- | Base of a player, providers of income and potentially
 -- main target of an opponent
-data Base     = Base BaseType Team Income Health Position     deriving (Eq, Ord, Show)
-data BaseType = BaseType MaxHealth IsHeadquarter Width Height deriving (Eq, Ord, Show)
+data Base     = Base BaseType Team Income Health Position Angle deriving (Eq, Ord, Show)
+data BaseType = BaseType MaxHealth IsHeadquarter Width Height   deriving (Eq, Ord, Show)
 
 class HasBase b where
   base :: Lens' b Base
@@ -64,32 +64,38 @@ instance HasBase Base where
 
 instance HasBaseType Base where
  baseType =
-    let f (Base a _ _ _ _)   = a
-        g (Base _ b c d e) a = Base a b c d e
+    let f (Base a _ _ _ _ _)   = a
+        g (Base _ b c d e k) a = Base a b c d e k
     in lens f g
 
 instance HasTeam Base where
   team =
-    let f (Base _ b _ _ _)   = b
-        g (Base a _ c d e) b = Base a b c d e
+    let f (Base _ b _ _ _ _)   = b
+        g (Base a _ c d e k) b = Base a b c d e k
     in lens f g
 
 instance HasIncome Base where
   income =
-    let f (Base _ _ c _ _)   = c
-        g (Base a b _ d e) c = Base a b c d e
+    let f (Base _ _ c _ _ _)   = c
+        g (Base a b _ d e k) c = Base a b c d e k
     in lens f g
 
 instance HasHealth Base where
   health =
-    let f (Base _ _ _ d _)   = d
-        g (Base a b c _ e) d = Base a b c d e
+    let f (Base _ _ _ d _ _)   = d
+        g (Base a b c _ e k) d = Base a b c d e k
     in lens f g
 
 instance HasPosition Base where
   position =
-    let f (Base _ _ _ _ e)   = e
-        g (Base a b c d _) e = Base a b c d e
+    let f (Base _ _ _ _ e _)   = e
+        g (Base a b c d _ k) e = Base a b c d e k
+    in lens f g
+
+instance HasAngle Base where
+  angle =
+    let f (Base _ _ _ _ _ k)   = k
+        g (Base a b c d e _) k = Base a b c d e k
     in lens f g
 
 instance HasMaxHealth Base where

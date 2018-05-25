@@ -22,6 +22,7 @@ module PureSpace.Common.Game.Types
   (
     V2 (..),
     Team (..),
+    Angle,
     Distance,
     DeltaTime,
     Position,
@@ -47,7 +48,8 @@ module PureSpace.Common.Game.Types
     HasHealth (..),
     HasMaxHealth (..),
     HasWidth (..),
-    HasHeight (..)
+    HasHeight (..),
+    HasAngle (..)
   )
   where
 
@@ -60,6 +62,7 @@ import           PureSpace.Common.Lens (Lens')
   FireCooldown = next available shot
 -}
 
+type Angle        = Float
 type Distance     = Float
 type Position     = V2 Float
 type Velocity     = V2 Float
@@ -114,3 +117,5 @@ class HasWidth s where
 class HasHeight s where
   height :: Lens' s Height
 
+class HasAngle s where
+  angle :: Lens' s Angle

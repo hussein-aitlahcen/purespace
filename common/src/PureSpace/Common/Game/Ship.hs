@@ -35,7 +35,7 @@ import           PureSpace.Common.Game.Projectile
 import           PureSpace.Common.Lens            (Lens', lens)
 
 
-data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity                            deriving (Eq, Ord, Show)
+data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity Angle                      deriving (Eq, Ord, Show)
 data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate FireRange deriving (Eq, Ord, Show)
 data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving (Eq, Ord, Show)
 data ShipIdentifier     = Fighter
@@ -69,38 +69,44 @@ instance HasShip Ship where
 
 instance HasShipCaracteristics Ship where
   shipCaracteristics =
-    let f (Ship a _ _ _ _ _)   = a
-        g (Ship _ b c d e k) a = Ship a b c d e k
+    let f (Ship a _ _ _ _ _ _)   = a
+        g (Ship _ b c d e k l) a = Ship a b c d e k l
     in lens f g
 
 instance HasTeam Ship where
   team =
-    let f (Ship _ b _ _ _ _)   = b
-        g (Ship a _ c d e k) b = Ship a b c d e k
+    let f (Ship _ b _ _ _ _ _)   = b
+        g (Ship a _ c d e k l) b = Ship a b c d e k l
     in lens f g
 
 instance HasHealth Ship where
   health =
-    let f (Ship _ _ c _ _ _)   = c
-        g (Ship a b _ d e k) c = Ship a b c d e k
+    let f (Ship _ _ c _ _ _ _)   = c
+        g (Ship a b _ d e k l) c = Ship a b c d e k l
     in lens f g
 
 instance HasFireCooldown Ship where
   fireCooldown =
-    let f (Ship _ _ _ d _ _)   = d
-        g (Ship a b c _ e k) d = Ship a b c d e k
+    let f (Ship _ _ _ d _ _ _)   = d
+        g (Ship a b c _ e k l) d = Ship a b c d e k l
     in lens f g
 
 instance HasPosition Ship where
   position =
-    let f (Ship _ _ _ _ e _)   = e
-        g (Ship a b c d _ k) e = Ship a b c d e k
+    let f (Ship _ _ _ _ e _ _)   = e
+        g (Ship a b c d _ k l) e = Ship a b c d e k l
     in lens f g
 
 instance HasVelocity Ship where
   velocity =
-    let f (Ship _ _ _ _ _ k)   = k
-        g (Ship a b c d e _) k = Ship a b c d e k
+    let f (Ship _ _ _ _ _ k _)   = k
+        g (Ship a b c d e _ l) k = Ship a b c d e k l
+    in lens f g
+
+instance HasAngle Ship where
+  angle =
+    let f (Ship _ _ _ _ _ _ l)   = l
+        g (Ship a b c d e k _) l = Ship a b c d e k l
     in lens f g
 
 instance HasShipType Ship where

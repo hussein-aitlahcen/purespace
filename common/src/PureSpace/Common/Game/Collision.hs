@@ -44,7 +44,6 @@ import qualified Data.Set                       as S
 import qualified Data.Vector                    as V
 import           Linear
 import           PureSpace.Common.Game.Geometry
-import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 

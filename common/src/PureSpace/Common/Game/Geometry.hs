@@ -19,20 +19,20 @@
 
 module PureSpace.Common.Game.Geometry
   (
-    V2 (..),
-    Position,
-    Direction,
+    module Linear,
+    module PureSpace.Common.Game.Types,
     Rectangle,
     bounds,
     overlaps,
     pointInRectangle,
     pointInCircle,
-    direction
+    direction,
+    directionAngle
   )
   where
 
-import           Linear                      (V2 (..))
-import           PureSpace.Common.Game.Types (Direction, Position)
+import           Linear                      hiding (angle, identity)
+import           PureSpace.Common.Game.Types
 
 -- top left, bot right
 type Rectangle = (Position, Position)
@@ -67,3 +67,10 @@ overlaps p@(aa, ab) q@(ba, bb) =
 
 direction :: Position -> Position -> Direction
 direction a b = b - a
+
+-- update an angle with the given direction
+-- if the direction is null, it stay the same
+directionAngle :: Direction -> Angle -> Angle
+directionAngle (V2 0 0) phi = phi
+directionAngle (V2 x y) _   = atan2 y x
+

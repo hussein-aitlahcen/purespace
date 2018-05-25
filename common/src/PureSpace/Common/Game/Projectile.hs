@@ -34,9 +34,9 @@ module PureSpace.Common.Game.Projectile
 import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Lens       (Lens', lens)
 
-data Projectile               = Projectile ProjectileCaracteristics Team Position Velocity deriving (Eq, Ord, Show)
-data ProjectileCaracteristics = ProjectileCaracteristics ProjectileType Damage MaxVelocity deriving (Eq, Ord, Show)
-data ProjectileType           = ProjectileType ProjectileIdentifier Width Height           deriving (Eq, Ord, Show)
+data Projectile               = Projectile ProjectileCaracteristics Team Position Velocity Angle deriving (Eq, Ord, Show)
+data ProjectileCaracteristics = ProjectileCaracteristics ProjectileType Damage MaxVelocity       deriving (Eq, Ord, Show)
+data ProjectileType           = ProjectileType ProjectileIdentifier Width Height                 deriving (Eq, Ord, Show)
 data ProjectileIdentifier     = Laser
                               | Rocket
                               deriving (Eq, Ord, Show)
@@ -58,26 +58,32 @@ instance HasProjectile Projectile where
 
 instance HasProjectileCaracteristics Projectile where
   projectileCaracteristics =
-    let f (Projectile a _ _ _)   = a
-        g (Projectile _ b c d) a = Projectile a b c d
+    let f (Projectile a _ _ _ _)   = a
+        g (Projectile _ b c d e) a = Projectile a b c d e
     in lens f g
 
 instance HasTeam Projectile where
   team =
-    let f (Projectile _ b _ _)   = b
-        g (Projectile a _ c d) b = Projectile a b c d
+    let f (Projectile _ b _ _ _)   = b
+        g (Projectile a _ c d e) b = Projectile a b c d e
     in lens f g
 
 instance HasPosition Projectile where
   position =
-    let f (Projectile _ _ c _)   = c
-        g (Projectile a b _ d) c = Projectile a b c d
+    let f (Projectile _ _ c _ _)   = c
+        g (Projectile a b _ d e) c = Projectile a b c d e
     in lens f g
 
 instance HasVelocity Projectile where
   velocity =
-    let f (Projectile _ _ _ d)   = d
-        g (Projectile a b c _) d = Projectile a b c d
+    let f (Projectile _ _ _ d _)   = d
+        g (Projectile a b c _ e) d = Projectile a b c d e
+    in lens f g
+
+instance HasAngle Projectile where
+  angle =
+    let f (Projectile _ _ _ _ e)   = e
+        g (Projectile a b c d _) e = Projectile a b c d e
     in lens f g
 
 instance HasProjectileType Projectile where

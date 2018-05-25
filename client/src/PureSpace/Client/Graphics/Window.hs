@@ -31,7 +31,7 @@ import           Graphics.GLUtil.BufferObjects (makeBuffer)
 import           Graphics.UI.GLUT              as GLUT hiding (One, Position,
                                                         ortho2D, position,
                                                         uniform)
-import           Linear                        hiding (identity)
+import           Linear                        hiding (angle, identity)
 import           PureSpace.Client.Graphics
 import           PureSpace.Common.Concurrent
 import           PureSpace.Common.Game.Entity
@@ -80,12 +80,12 @@ createGameWindow = do
   loadInputState
   windowLoop
   where
-    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2 0 400) (V2 0 0),
-                                          Ship sc One 100 0 (V2 0 200) (V2 0 0),
-                                          Ship sc One 100 0 (V2 0 0) (V2 0 0)] 0 [],
-                      PlayerState Two [] [Ship sc Two 100 0 (V2 1000 400) (V2 0 0),
-                                          Ship sc Two 100 0 (V2 1000 200) (V2 0 0),
-                                          Ship sc Two 100 0 (V2 1000   0) (V2 0 0)] 0 []]
+    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2 0 400) (V2 0 0) 0,
+                                          Ship sc One 100 0 (V2 0 200) (V2 0 0) 0,
+                                          Ship sc One 100 0 (V2 0 0) (V2 0 0) 0] 0 [],
+                      PlayerState Two [] [Ship sc Two 100 0 (V2 1000 400) (V2 0 0) 0,
+                                          Ship sc Two 100 0 (V2 1000 200) (V2 0 0) 0,
+                                          Ship sc Two 100 0 (V2 1000   0) (V2 0 0) 0] 0 []]
       where
         pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 500 500)
         sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 500
@@ -170,7 +170,7 @@ VISUAL TESTING PURPOSES ONLY
 
 -- TODO: game config
 mapWidth :: GridSize
-mapWidth = 3000
+mapWidth = 1500
 
 debugDisplay :: IORef GameState -> Program -> SpritesByName -> DisplayCallback
 debugDisplay gameStateRef program sprites = do
@@ -182,7 +182,7 @@ debugDisplay gameStateRef program sprites = do
       (grid, nextGame)                           = runState (updateGame elapsedSeconds) game
       (Just shipVAO)                     = sprites `vaoByName` "playerShip1_blue.png"
       (Just projVAO)                     = sprites `vaoByName` "laserBlue05.png"
-      display :: (HasPosition s, HasVelocity s) => VertexArrayObject -> s -> DisplayCallback
+      display :: (HasPosition s, HasVelocity s, HasAngle s) => VertexArrayObject -> s -> DisplayCallback
       display                            = displaySprite program (fromIntegral w) (fromIntegral h)
       displayEntity (EntityShip s)       = display shipVAO s
       displayEntity (EntityProjectile p) = display projVAO p
@@ -193,14 +193,12 @@ debugDisplay gameStateRef program sprites = do
   swapBuffers
   postRedisplay Nothing
 
-displaySprite :: (HasPosition s, HasVelocity s) => Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
+displaySprite :: (HasPosition s, HasVelocity s, HasAngle s) => Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
 displaySprite program w h vao s = do
   uniformP "mProjection" $ ortho2D mapWidth w h
-  uniformP "mModelView"  $ rotate2D (angleOf $ s ^. velocity) $ translate2D (s ^. position) identity
+  uniformP "mModelView"  $ rotate2D (s ^. angle - pi/2) $ translate2D (s ^. position) identity
   bindVertexArrayObject $= Just vao
   spriteDraw
   bindVertexArrayObject $= Nothing
   where
     uniformP = uniform program
-    -- pi/2 because of the sprite initial position :/
-    angleOf (V2 x y) = atan2 y x - pi/2

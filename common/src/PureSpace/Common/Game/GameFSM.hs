@@ -32,9 +32,6 @@ module PureSpace.Common.Game.GameFSM
   where
 
 import qualified Data.PQueue.Prio.Min            as PQ
-import qualified Data.Set                        as S
-import qualified Data.Vector                     as V
-import           Linear
 import           PureSpace.Common.Game.Action
 import           PureSpace.Common.Game.Collision
 import           PureSpace.Common.Game.Entity
@@ -55,11 +52,14 @@ import           PureSpace.Common.Prelude
 
 type GameActionWriter m = MonadWriter [GameAction] m
 
+mapWidth    = 1500
+mapDivision = 20
+
 updateGame :: (MonadState s m,
                HasGameState s,
                HasPlayers s) => DeltaTime -> m (Grid Entity)
 updateGame dt = do
-  grid <- createSpatialGrid 3000 20 <$> getEntities
+  grid <- createSpatialGrid mapWidth mapDivision <$> getEntities
   gameState %= updatePlayers dt grid
   pure grid
 
@@ -128,7 +128,9 @@ updatePlayer dt grid player =
               targetPosition = b ^. position
               projCarac      = a ^. projectileCaracteristics
               projMaxV       = projCarac ^. maxVelocity
-              newProj        = Projectile projCarac (a ^. team) shotPosition (signorm (direction shotPosition targetPosition) * projMaxV)
+              dir              = (signorm (direction shotPosition targetPosition) * projMaxV)
+              phi              = directionAngle dir 0
+              newProj        = Projectile projCarac (a ^. team) shotPosition dir phi
           in projectiles %~ (:) newProj
 
 updateShips :: (GameActionWriter m,
@@ -148,21 +150,21 @@ updatePosition dt entity =
   let v = entity ^. velocity
   in entity & position +~ v ^* dt
 
+updateVelocity :: (HasPosition s, HasVelocity s, HasAngle s) => Velocity -> s -> s
+updateVelocity v = (velocity .~ v) . (angle %~ directionAngle v)
+
 updateShipObjective :: GameActionWriter m
                     => DeltaTime
                     -> Grid Entity
                     -> Ship
                     -> m Ship
-updateShipObjective dt grid s@(Ship _ t _ _ _ _) =
-  let resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
-      reduceFireCooldown = fireCooldown -~ dt
-      resetVelocity      = velocity .~ V2 0 0
-  in case enemyInRange of
+updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
+  case nearestEnemy (s ^. fireRange) of
        Just (EntityShip enemy) ->
          if s ^. fireCooldown <= 0
          then do
            tell [ShotTarget s enemy]
-           pure $ s & resetFireCooldown  . resetVelocity
+           pure $ fireEnemy enemy
          else
            pure $ s & reduceFireCooldown . resetVelocity
 
@@ -170,12 +172,13 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _) =
 
        Just (EntityProjectile enemyProjectile) -> pure s -- TODO: nothing
 
-       Nothing -> case nearestEnemy of
+       Nothing -> case nearestEnemy (mapWidth * 2) of
          Just (EntityShip enemy) ->
            let pos      = s     ^. position
-               enemyPos = enemy ^. position
                maxV     = s     ^. maxVelocity
-           in pure $ s & velocity .~ signorm (direction pos enemyPos) * maxV
+               enemyPos = enemy ^. position
+               v        = signorm (direction pos enemyPos) * maxV
+           in pure $ updateVelocity v s
 
          Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire
 
@@ -185,19 +188,27 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _) =
 
   where
 
-    -- TODO: nearest ship/base, nothing else
-    enemyInRange :: Maybe Entity
-    enemyInRange =
-      let enemiesInRange =
-            let inRange                  = computeRange grid (EntityShip s) (s ^. fireRange)
-                shipsOnly (EntityShip _) = True
-                shipsOnly _              = False
-                enemiesOnly              = PQ.filter (liftA2 (&&) shipsOnly (enemyTeamOf t))
-            in enemiesOnly inRange
-      in snd <$> PQ.getMin enemiesInRange
+    resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
 
-    -- TODO: nearest ship/base, nothing else
-    nearestEnemy :: Maybe Entity
-    nearestEnemy =
-      let enemies = S.filter (enemyTeamOf t) (eliminateSpatialGrid grid)
-      in safeHead $ S.toList enemies
+    reduceFireCooldown = fireCooldown -~ dt
+
+    resetVelocity = velocity .~ V2 0 0
+
+    fireEnemy e =
+      let pos         = s ^. position
+          enemyPos    = e ^. position
+          d           = direction pos enemyPos
+          phi           = directionAngle d
+          updateAngle = angle %~ phi
+      in s & updateAngle . resetFireCooldown . resetVelocity
+
+    enemiesInRange :: Distance -> PQ.MinPQueue Distance Entity
+    enemiesInRange d =
+      let inRange                  = computeRange grid (EntityShip s) d
+          shipsOnly (EntityShip _) = True
+          shipsOnly _              = False
+          enemiesOnly              = PQ.filter (liftA2 (&&) shipsOnly (enemyTeamOf t))
+      in enemiesOnly inRange
+
+    nearestEnemy :: Distance -> Maybe Entity
+    nearestEnemy = fmap snd . PQ.getMin . enemiesInRange
