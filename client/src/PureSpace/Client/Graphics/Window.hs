@@ -86,16 +86,18 @@ createGameWindow = do
   windowLoop
   where
     game (GameConfig a b) =
-      GameState (createSpatialGrid a b [])
-      [PlayerState One [] [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
-                           Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
-                           Ship sc One 100 0 (V2 0 0) (V2 0 0) 0] 0 [],
-       PlayerState Two [] [Ship sc Two 100 0 (V2 1500 1000) (V2 0 0) 0,
-                           Ship sc Two 100 0 (V2 1500 500) (V2 0 0) 0,
-                           Ship sc Two 100 0 (V2 1500 0) (V2 0 0) 0] 0 []]
+      GameState (createSpatialGrid a b (EntityShip <$> oneShips <> twoShips))
+      [PlayerState One [] oneShips 0 [],
+       PlayerState Two [] twoShips 0 []]
       where
         pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 500 500)
         sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 500
+        oneShips = [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
+                    Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
+                    Ship sc One 100 0 (V2 0 0) (V2 0 0) 0]
+        twoShips = [Ship sc Two 100 0 (V2 1500 1000) (V2 0 0) 0,
+                    Ship sc Two 100 0 (V2 1500 500) (V2 0 0) 0,
+                    Ship sc Two 100 0 (V2 1500 0) (V2 0 0) 0]
 
 loadInputState :: (MonadIO m,
                   MonadState s m,
@@ -206,7 +208,7 @@ debugDisplay config gameStateRef program sprites = do
 displaySprite :: (HasGameConfig a, HasGridSize a, HasPosition s, HasVelocity s, HasAngle s) => a -> Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
 displaySprite config program w h vao s = do
   -- 2D orthographic projection relative to the map size
-  uniformP "mProjection" $ ortho2D (max (config ^. gridSize ^. _x) (config ^. gridSize ^. _y)) w h
+  uniformP "mProjection" $ ortho2D (max (gs ^. _x) (gs ^. _y)) w h
   -- center the camera according to the map width/height
   uniformP "mView"       $ translate2D (-(config ^. gridSize) / 2) identity
   -- we subtract pi/2 to the angle because
@@ -217,3 +219,4 @@ displaySprite config program w h vao s = do
   bindVertexArrayObject $= Nothing
   where
     uniformP = uniform program
+    gs = config ^. gridSize

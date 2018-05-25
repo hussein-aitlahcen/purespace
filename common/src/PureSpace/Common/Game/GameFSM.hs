@@ -177,16 +177,17 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
            pure $ s & reduceFireCooldown . resetVelocity
        Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire aswell ?
        Just (EntityProjectile enemyProjectile) -> pure s -- TODO: nothing
-       Nothing -> case nearestEnemy InfiniteRange of
-         Just (EntityShip enemy) ->
-           let pos      = s     ^. position
-               maxV     = s     ^. maxVelocity
-               enemyPos = enemy ^. position
-               v        = normalize (direction pos enemyPos) * maxV
-           in pure $ updateVelocity v s
-         Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire
-         Just (EntityProjectile enemyProjectile) -> pure $ s & resetVelocity -- TODO: nothing
-         Nothing                                 -> pure $ s & resetVelocity -- TODO: should be the end of the game
+       Nothing ->
+         case nearestEnemy InfiniteRange of
+           Just (EntityShip enemy) ->
+             let pos      = s     ^. position
+                 maxV     = s     ^. maxVelocity
+                 enemyPos = enemy ^. position
+                 v        = normalize (direction pos enemyPos) * maxV
+             in pure $ updateVelocity v s
+           Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire
+           Just (EntityProjectile enemyProjectile) -> pure $ s & resetVelocity -- TODO: nothing
+           Nothing                                 -> pure $ s & resetVelocity -- TODO: should be the end of the game
   where
     resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
     reduceFireCooldown = fireCooldown -~ dt

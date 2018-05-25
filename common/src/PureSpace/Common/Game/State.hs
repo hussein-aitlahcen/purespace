@@ -40,7 +40,7 @@ import           PureSpace.Common.Lens              (Lens', lens)
 data GameState = GameState (Grid Entity) [PlayerState]
 
 initialGameState :: GameConfig -> GameState
-initialGameState (GameConfig gs gd)= GameState (createSpatialGrid gs gd []) []
+initialGameState (GameConfig gs gd) = GameState (createSpatialGrid gs gd []) []
 
 -- To ponder: maybe an `Ixed` would be better here ?
 -- This might need to be changed. We will see what's more

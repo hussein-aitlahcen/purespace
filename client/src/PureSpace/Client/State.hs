@@ -20,6 +20,8 @@
 module PureSpace.Client.State
   (
     module PureSpace.Client.Graphics.State,
+    module PureSpace.Common.Game.State,
+    module PureSpace.Common.Game.Config,
     ClientState (..),
     initialClientState
   )
