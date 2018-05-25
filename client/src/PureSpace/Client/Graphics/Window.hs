@@ -173,10 +173,6 @@ VISUAL TESTING PURPOSES ONLY
 ############################
 -}
 
--- TODO: game config
-mapSize     = V2 1500 1000
-mapDivision = V2 15 10
-
 debugDisplay :: (HasGameConfig s,
                  HasGridSize s,
                  HasGridDivision s)
@@ -195,7 +191,7 @@ debugDisplay config gameStateRef program sprites = do
       (Just shipVAO)   = sprites `vaoByName` "playerShip1_blue.png"
       (Just projVAO)   = sprites `vaoByName` "laserBlue05.png"
       display :: (HasPosition s, HasVelocity s, HasAngle s) => VertexArrayObject -> s -> DisplayCallback
-      display                            = displaySprite program (fromIntegral w) (fromIntegral h)
+      display                            = displaySprite config program (fromIntegral w) (fromIntegral h)
       displayEntity (EntityShip s)       = display shipVAO s
       displayEntity (EntityProjectile p) = display projVAO p
       displayEntity _                    = putStrLn "bases not drawable yet"
@@ -205,12 +201,12 @@ debugDisplay config gameStateRef program sprites = do
   swapBuffers
   postRedisplay Nothing
 
-displaySprite :: (HasPosition s, HasVelocity s, HasAngle s) => Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
-displaySprite program w h vao s = do
+displaySprite :: (HasGameConfig a, HasGridSize a, HasPosition s, HasVelocity s, HasAngle s) => a -> Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
+displaySprite config program w h vao s = do
   -- 2D orthographic projection relative to the map size
-  uniformP "mProjection" $ ortho2D (max (mapSize ^. _x) (mapSize ^. _y)) w h
+  uniformP "mProjection" $ ortho2D (max (config ^. gridSize ^. _x) (config ^. gridSize ^. _y)) w h
   -- center the camera according to the map width/height
-  uniformP "mView"       $ translate2D (-mapSize / 2) identity
+  uniformP "mView"       $ translate2D (-(config ^. gridSize) / 2) identity
   -- we subtract pi/2 to the angle because
   -- of the sprite initial position in the texture
   uniformP "mModel"      $ rotate2D (s ^. angle - pi/2) $ translate2D (s ^. position) identity
