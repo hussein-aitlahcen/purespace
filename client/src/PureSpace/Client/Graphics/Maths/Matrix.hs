@@ -51,7 +51,6 @@ scale2D (V2 x y) = (!*!) (scaled (V4 x y 1 1))
 rotate2D :: Float -> Matrix -> Matrix
 rotate2D radians matrix = matrix !*! rotationMatrix
   where
-    -- radians = degrees * (pi / 180)
     rotationMatrix = m33_to_m44
                      $ fromQuaternion
                      $ axisAngle (V3 0 0 1) radians
