@@ -198,6 +198,7 @@ debugDisplay config gameStateRef program sprites = do
       display                            = displaySprite config program (fromIntegral w) (fromIntegral h)
       displayEntity (EntityShip s)       = display shipVAO s
       displayEntity (EntityProjectile p) = display projVAO p
+      -- TODO: add base vao
       displayEntity _                    = putStrLn "bases not drawable yet"
   writeIORef gameStateRef nextGame
   traverse_ displayEntity $ eliminateSpatialGrid (nextGame ^. spatialGrid)
