@@ -20,15 +20,16 @@
 module PureSpace.Common.Game.Collision
   (
     V2 (..),
+    RangeType (..),
     HasPosition (..),
     HasWidth (..),
     HasHeight (..),
-    GridSize,
-    GridDivision,
     BucketSize,
     BucketId,
     Bucket (..),
     Grid (..),
+    GridSize,
+    GridDivision,
     Collision,
     createSpatialGrid,
     eliminateSpatialGrid,
@@ -47,6 +48,7 @@ import           PureSpace.Common.Game.Geometry
 import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
+data RangeType    = InfiniteRange | FiniteRange Float
 type Collision a  = (a, a)
 type GridSize     = V2 Float
 type GridDivision = V2 Float
@@ -134,9 +136,9 @@ vectorToPQueue f = V.foldr' step PQ.empty
 computeRange :: (HasPosition a, HasPosition s)
              => Grid s
              -> a
-             -> FireRange
+             -> RangeType
              -> PQ.MinPQueue Distance s
-computeRange (Grid _ _ bs buckets) x r =
+computeRange (Grid _ _ bs buckets) x (FiniteRange r) =
   let p         = x ^. position
       rangeRect = bounds p r r
       inRange y = pointInCircle p r $ y ^. position
@@ -148,3 +150,13 @@ computeRange (Grid _ _ bs buckets) x r =
             f Nothing       = []
         in join $ f . ($ buckets) <$> lk
   in PQ.unions $ vectorToPQueue d . V.filter inRange . bucketUnits <$> targetBuckets
+
+computeRange (Grid _ _ _ buckets) x InfiniteRange =
+  let d y = distance (y ^. position) (x ^. position)
+      reduceBucket =
+        let step y = PQ.insert (d y) y
+        in V.foldr step PQ.empty . bucketUnits
+      reduceBucketMap =
+        let step y = PQ.union (reduceBucket y)
+        in M.foldr' step PQ.empty
+  in reduceBucketMap buckets

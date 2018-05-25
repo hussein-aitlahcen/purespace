@@ -43,6 +43,7 @@ library
                      , PureSpace.Common.Resource.Error
                      , PureSpace.Common.Game.GameFSM
                      , PureSpace.Common.Game.State
+                     , PureSpace.Common.Game.Config
                      , PureSpace.Common.Game.Error
                      , PureSpace.Common.Game.Types
                      , PureSpace.Common.Game.Geometry

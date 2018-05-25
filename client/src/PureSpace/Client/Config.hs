@@ -19,8 +19,27 @@
 
 module PureSpace.Client.Config
   (
-    ClientConfig (..)
+    ClientConfig (..),
+    defaultClientConfig
   )
   where
 
-data ClientConfig = ClientConfig deriving Show
+import           PureSpace.Common.Game.Config
+import           PureSpace.Common.Lens
+
+data ClientConfig = ClientConfig GameConfig deriving Show
+
+defaultClientConfig :: ClientConfig
+defaultClientConfig = ClientConfig defaultGameConfig
+
+instance HasGameConfig ClientConfig where
+  gameConfig =
+    let f (ClientConfig a) = a
+        g _                = ClientConfig
+    in lens f g
+
+instance HasGridSize ClientConfig where
+  gridSize = gameConfig . gridSize
+
+instance HasGridDivision ClientConfig where
+  gridDivision = gameConfig . gridDivision

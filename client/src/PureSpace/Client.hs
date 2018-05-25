@@ -37,8 +37,7 @@ import           System.Clock
 
 runGraphics :: IO ()
 runGraphics =
-  let config = ClientConfig
-      go = evalStateT (runReaderT (runExceptT createGameWindow) config) initialClientState
+  let go = evalStateT (runReaderT (runExceptT createGameWindow) defaultClientConfig) initialClientState
       displayResult res = case res of
         Left message -> print (message :: ClientError)
         Right _      -> putStrLn "Unseen string"

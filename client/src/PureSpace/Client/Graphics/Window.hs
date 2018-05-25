@@ -59,6 +59,10 @@ fps = 120
 createGameWindow :: (MonadIO m,
                      MonadState s m,
                      MonadError e m,
+                     MonadReader r m,
+                     HasGameConfig r,
+                     HasGridSize r,
+                     HasGridDivision r,
                      AsResourceError e,
                      HasDeviceState s,
                      HasShaderState s,
@@ -75,7 +79,8 @@ createGameWindow = do
   window             <- createWindow "PureSpace"
   (program, sprites) <- initContext atlas
   gameRef            <- liftIO $ newIORef game
-  displayCallback $= debugDisplay gameRef program sprites
+  gameConf           <- view gameConfig
+  displayCallback $= debugDisplay gameConf gameRef program sprites
   idleCallback    $= Just (postRedisplay (Just window))
   loadInputState
   windowLoop
@@ -172,14 +177,21 @@ VISUAL TESTING PURPOSES ONLY
 mapSize     = V2 1500 1000
 mapDivision = V2 15 10
 
-debugDisplay :: IORef GameState -> Program -> SpritesByName -> DisplayCallback
-debugDisplay gameStateRef program sprites = do
+debugDisplay :: (HasGameConfig s,
+                 HasGridSize s,
+                 HasGridDivision s)
+             => s
+             -> IORef GameState
+             -> Program
+             -> SpritesByName
+             -> DisplayCallback
+debugDisplay config gameStateRef program sprites = do
   Size w h <- GLUT.get windowSize
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
-  game <- readIORef gameStateRef
+  game <- liftIO $ readIORef gameStateRef
   let elapsedSeconds   = 1 / fromIntegral fps -- totally fake so what ?
-      (grid, nextGame) = runState (updateGame elapsedSeconds) game
+      (grid, nextGame) = runState (runReaderT (updateGame elapsedSeconds) config) game
       (Just shipVAO)   = sprites `vaoByName` "playerShip1_blue.png"
       (Just projVAO)   = sprites `vaoByName` "laserBlue05.png"
       display :: (HasPosition s, HasVelocity s, HasAngle s) => VertexArrayObject -> s -> DisplayCallback

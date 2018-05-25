@@ -19,17 +19,24 @@
 
 module PureSpace.Common.Game.Config
   (
+    V2 (..),
+    GridDivision,
+    GridSize,
     GameConfig (..),
     HasGameConfig (..),
     HasGridSize (..),
-    HasGridDivision (..)
+    HasGridDivision (..),
+    defaultGameConfig
   )
   where
 
-import           PureSpace.Common.Game.Collision
-import           PureSpace.Common.Lens
+import           PureSpace.Common.Game.Collision (GridDivision, GridSize, V2 (..))
+import           PureSpace.Common.Lens           (Lens', lens)
 
-data GameConfig = GameConfig GridSize GridDivision
+data GameConfig = GameConfig GridSize GridDivision deriving Show
+
+defaultGameConfig :: GameConfig
+defaultGameConfig = GameConfig (V2 1500 1000) (V2 15 10)
 
 class HasGameConfig s where
   gameConfig :: Lens' s GameConfig
