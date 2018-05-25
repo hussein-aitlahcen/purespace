@@ -109,25 +109,23 @@ createSpatialGrid gs gd units =
 computeCollisions :: (HasPosition s,
                       HasWidth s,
                       HasHeight s,
-                      Eq s)
+                      Ord s)
                   => Grid s
-                  -> V.Vector (Collision s)
-computeCollisions (Grid _ _ _ buckets) = M.foldr step V.empty buckets
+                  -> S.Set (Collision s)
+computeCollisions (Grid _ _ _ buckets) = M.foldr step S.empty buckets
   where
     step (Bucket _ objs) acc = go $ V.length objs
       where
         go 0 = acc
         go 1 = acc
-        go l =
-          let exists x = V.elem x acc
-          in acc V.++ V.fromList (catMaybes [bool
-                                              (overlaps (unitBounds a) (unitBounds b) && (not . exists) (a, b))
-                                              (Just (a, b))
-                                              Nothing
-                                            | j <- [0..l-2]
-                                            , k <- [j+1..l-1]
-                                            , let a = objs V.! j
-                                            , let b = objs V.! k])
+        go l = S.union acc $ S.fromList (catMaybes [bool
+                                                     (overlaps (unitBounds a) (unitBounds b))
+                                                     (Just (a, b))
+                                                     Nothing
+                                                   | j <- [0..l-2]
+                                                   , k <- [j+1..l-1]
+                                                   , let a = objs V.! j
+                                                   , let b = objs V.! k])
 
 vectorToPQueue :: Ord k => (a -> k) -> V.Vector a -> PQ.MinPQueue k a
 vectorToPQueue f entities = V.foldr' step PQ.empty entities
