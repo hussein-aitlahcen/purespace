@@ -66,12 +66,19 @@ updateGame :: (MonadState s m,
            => DeltaTime
            -> m ()
 updateGame dt = do
-  gameMapSize     <- view gridSize
-  gameMapDivision <- view gridDivision
   gameState %= updatePlayers dt
-  newGrid <- createSpatialGrid gameMapSize gameMapDivision <$> getEntities
+  newGrid <- nextGrid
   gameState %= (spatialGrid .~ newGrid)
   pure ()
+
+nextGrid :: (MonadState s m,
+            HasGameState s,
+            HasPlayers s,
+            HasSpatialGrid s)
+        => m (Grid Entity)
+nextGrid = do
+  (Grid gs gd _ _ ) <- use spatialGrid
+  createSpatialGrid gs gd <$> getEntities
 
 enemyTeamOf :: HasTeam s => Team -> (s -> Bool)
 enemyTeamOf t = (/=) t . view team
