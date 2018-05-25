@@ -48,9 +48,9 @@ import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
 type Collision a  = (a, a)
-type GridSize     = Float
-type GridDivision = Float
-type BucketSize   = Float
+type GridSize     = V2 Float
+type GridDivision = V2 Float
+type BucketSize   = V2 Float
 type BucketId     = V2 Int
 data Bucket     a = Bucket BucketId (V.Vector a)                                deriving Show
 data Grid       a = Grid GridSize GridDivision BucketSize (M.IntMap (Bucket a)) deriving Show
@@ -70,7 +70,7 @@ rectangleBuckets bs (a, b) =
   in [V2 x y | x <- [xa..xb], y <- [ya..yb]]
 
 positionBucket :: BucketSize -> Position -> BucketId
-positionBucket bs = fmap round . (^/ bs)
+positionBucket bs = fmap round . (/ bs)
 
 bucketHashId :: BucketId -> Int
 bucketHashId (V2 x y) = 32 `shiftL` x .|. y .&. 0xFFFFFFFF
@@ -90,7 +90,7 @@ createSpatialGrid :: (HasPosition s,
                   -> GridDivision
                   -> [s]
                   -> Grid s
-createSpatialGrid gs gd units =
+createSpatialGrid gs gd@(V2 gdw gdh) units =
   let bs               = gs / gd
       rc               = rectangleBuckets bs
       -- (unit, (tl, br))
@@ -99,8 +99,8 @@ createSpatialGrid gs gd units =
       unitsBuckets     = second (fmap bucketHashId . rc) <$> unitsWithCorners
       unitsInBucket h  = fst <$> filter (elem h . snd) unitsBuckets
       buckets          = M.fromList [(h, Bucket p $ V.fromList $ unitsInBucket h)
-                                    | x <- [0..round gd]
-                                    , y <- [0..round gd]
+                                    | x <- [0..round gdw]
+                                    , y <- [0..round gdh]
                                     , let p = V2 x y
                                     , let h = bucketHashId p]
   in Grid gs gd bs buckets

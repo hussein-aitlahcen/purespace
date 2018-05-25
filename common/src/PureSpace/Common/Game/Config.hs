@@ -22,4 +22,5 @@ module PureSpace.Common.Game.Config
   )
   where
 
+data GameConfig = GameConfig Width
 

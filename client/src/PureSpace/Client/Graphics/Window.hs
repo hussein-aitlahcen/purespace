@@ -80,12 +80,12 @@ createGameWindow = do
   loadInputState
   windowLoop
   where
-    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2 0 400) (V2 0 0) 0,
-                                          Ship sc One 100 0 (V2 0 200) (V2 0 0) 0,
+    game = GameState [PlayerState One [] [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
+                                          Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
                                           Ship sc One 100 0 (V2 0 0) (V2 0 0) 0] 0 [],
-                      PlayerState Two [] [Ship sc Two 100 0 (V2 1000 400) (V2 0 0) 0,
-                                          Ship sc Two 100 0 (V2 1000 200) (V2 0 0) 0,
-                                          Ship sc Two 100 0 (V2 1000   0) (V2 0 0) 0] 0 []]
+                      PlayerState Two [] [Ship sc Two 100 0 (V2 1500 1000) (V2 0 0) 0,
+                                          Ship sc Two 100 0 (V2 1500 500) (V2 0 0) 0,
+                                          Ship sc Two 100 0 (V2 1500 0) (V2 0 0) 0] 0 []]
       where
         pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 500 500)
         sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 500
@@ -169,8 +169,8 @@ VISUAL TESTING PURPOSES ONLY
 -}
 
 -- TODO: game config
-mapWidth :: GridSize
-mapWidth = 1500
+mapSize     = V2 1500 1000
+mapDivision = V2 15 10
 
 debugDisplay :: IORef GameState -> Program -> SpritesByName -> DisplayCallback
 debugDisplay gameStateRef program sprites = do
@@ -178,10 +178,10 @@ debugDisplay gameStateRef program sprites = do
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
   game <- readIORef gameStateRef
-  let elapsedSeconds                     = 1 / fromIntegral fps -- totally fake so what ?
-      (grid, nextGame)                           = runState (updateGame elapsedSeconds) game
-      (Just shipVAO)                     = sprites `vaoByName` "playerShip1_blue.png"
-      (Just projVAO)                     = sprites `vaoByName` "laserBlue05.png"
+  let elapsedSeconds   = 1 / fromIntegral fps -- totally fake so what ?
+      (grid, nextGame) = runState (updateGame elapsedSeconds) game
+      (Just shipVAO)   = sprites `vaoByName` "playerShip1_blue.png"
+      (Just projVAO)   = sprites `vaoByName` "laserBlue05.png"
       display :: (HasPosition s, HasVelocity s, HasAngle s) => VertexArrayObject -> s -> DisplayCallback
       display                            = displaySprite program (fromIntegral w) (fromIntegral h)
       displayEntity (EntityShip s)       = display shipVAO s
@@ -195,8 +195,9 @@ debugDisplay gameStateRef program sprites = do
 
 displaySprite :: (HasPosition s, HasVelocity s, HasAngle s) => Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
 displaySprite program w h vao s = do
-  uniformP "mProjection" $ ortho2D mapWidth w h
-  uniformP "mModelView"  $ rotate2D (s ^. angle - pi/2) $ translate2D (s ^. position) identity
+  uniformP "mProjection" $ ortho2D (max (mapSize ^. _x) (mapSize ^. _y)) w h
+  uniformP "mView"       $ translate2D (-mapSize / 2) identity
+  uniformP "mModel"      $ rotate2D (s ^. angle - pi/2) $ translate2D (s ^. position) identity
   bindVertexArrayObject $= Just vao
   spriteDraw
   bindVertexArrayObject $= Nothing

@@ -52,14 +52,14 @@ import           PureSpace.Common.Prelude
 
 type GameActionWriter m = MonadWriter [GameAction] m
 
-mapWidth    = 1500
-mapDivision = 20
+mapSize     = V2 1500 1000
+mapDivision = V2 15 10
 
 updateGame :: (MonadState s m,
                HasGameState s,
                HasPlayers s) => DeltaTime -> m (Grid Entity)
 updateGame dt = do
-  grid <- createSpatialGrid mapWidth mapDivision <$> getEntities
+  grid <- createSpatialGrid mapSize mapDivision <$> getEntities
   gameState %= updatePlayers dt grid
   pure grid
 
@@ -111,7 +111,6 @@ updatePlayer dt grid player =
       endoActions           = executeAction <$> actions
       composedActions       = mconcat endoActions
   in appEndo composedActions . updateProjectiles dt . updateCash $ nextPlayer
-
   where
     updateCash :: (HasCash s, HasBases s) => s -> s
     updateCash s =
@@ -119,7 +118,6 @@ updatePlayer dt grid player =
             let incomePerSecond = sum $ view income <$> s ^. bases
             in round $ fromIntegral incomePerSecond / dt
       in s & cash +~ incomeDt
-
     executeAction :: GameAction -> Endo PlayerState
     executeAction (ShotTarget a b) = Endo go
       where
@@ -167,33 +165,22 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
            pure $ fireEnemy enemy
          else
            pure $ s & reduceFireCooldown . resetVelocity
-
        Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire aswell ?
-
        Just (EntityProjectile enemyProjectile) -> pure s -- TODO: nothing
-
-       Nothing -> case nearestEnemy (mapWidth * 2) of
+       Nothing -> case nearestEnemy (mapSize ^. _x * 2) of
          Just (EntityShip enemy) ->
            let pos      = s     ^. position
                maxV     = s     ^. maxVelocity
                enemyPos = enemy ^. position
                v        = signorm (direction pos enemyPos) * maxV
            in pure $ updateVelocity v s
-
          Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire
-
          Just (EntityProjectile enemyProjectile) -> pure $ s & resetVelocity -- TODO: nothing
-
          Nothing                                 -> pure $ s & resetVelocity -- TODO: should be the end of the game
-
   where
-
     resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
-
     reduceFireCooldown = fireCooldown -~ dt
-
     resetVelocity = velocity .~ V2 0 0
-
     fireEnemy e =
       let pos         = s ^. position
           enemyPos    = e ^. position
@@ -201,7 +188,6 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
           phi           = directionAngle d
           updateAngle = angle %~ phi
       in s & updateAngle . resetFireCooldown . resetVelocity
-
     enemiesInRange :: Distance -> PQ.MinPQueue Distance Entity
     enemiesInRange d =
       let inRange                  = computeRange grid (EntityShip s) d
@@ -209,6 +195,5 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
           shipsOnly _              = False
           enemiesOnly              = PQ.filter (liftA2 (&&) shipsOnly (enemyTeamOf t))
       in enemiesOnly inRange
-
     nearestEnemy :: Distance -> Maybe Entity
     nearestEnemy = fmap snd . PQ.getMin . enemiesInRange
