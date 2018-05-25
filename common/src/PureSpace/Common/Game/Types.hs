@@ -23,7 +23,6 @@ module PureSpace.Common.Game.Types
   (
     V2 (..),
     Team (..),
-    MapSize,
     Angle,
     Distance,
     DeltaTime,
@@ -64,7 +63,6 @@ import           PureSpace.Common.Lens (Lens')
   FireCooldown = next available shot
 -}
 
-type MapSize      = V2 Float
 type Angle        = Float
 type Distance     = Float
 type Position     = V2 Float
