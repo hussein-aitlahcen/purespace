@@ -89,8 +89,8 @@ createGameWindow = do
       [PlayerState One [] oneShips 0 [],
        PlayerState Two [] twoShips 0 []]
       where
-        pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 500 500)
-        sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 500
+        pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 1500 1500)
+        sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 (CircleRange 500)
         oneShips = [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
                     Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
                     Ship sc One 100 0 (V2 0 0) (V2 0 0) 0]
@@ -189,10 +189,10 @@ debugDisplay config gameStateRef program sprites = do
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
   game <- liftIO $ readIORef gameStateRef
-  let elapsedSeconds   = 1 / fromIntegral fps -- totally fake so what ?
-      nextGame = execState (runReaderT (updateGame elapsedSeconds) config) game
-      (Just shipVAO)   = sprites `vaoByName` "playerShip1_blue.png"
-      (Just projVAO)   = sprites `vaoByName` "laserBlue05.png"
+  let elapsedSeconds = 1 / fromIntegral fps -- totally fake so what ?
+      nextGame       = execState (runReaderT (updateGame elapsedSeconds) config) game
+      (Just shipVAO) = sprites `vaoByName` "playerShip1_blue.png"
+      (Just projVAO) = sprites `vaoByName` "laserBlue05.png"
       display :: (HasPosition s, HasVelocity s, HasAngle s) => VertexArrayObject -> s -> DisplayCallback
       display                            = displaySprite config program (fromIntegral w) (fromIntegral h)
       displayEntity (EntityShip s)       = display shipVAO s

@@ -36,7 +36,7 @@ import           PureSpace.Common.Lens            (Lens', lens)
 
 
 data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity Angle                      deriving (Eq, Ord, Show)
-data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate FireRange deriving (Eq, Ord, Show)
+data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate RangeType deriving (Eq, Ord, Show)
 data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving (Eq, Ord, Show)
 data ShipIdentifier     = Fighter
                         | Bomber
@@ -130,8 +130,8 @@ instance HasMaxVelocity Ship where
 instance HasFireRate Ship where
   fireRate = shipCaracteristics . fireRate
 
-instance HasFireRange Ship where
-  fireRange = shipCaracteristics . fireRange
+instance HasRangeType Ship where
+  rangeType = shipCaracteristics . rangeType
 
 instance HasProjectileCaracteristics Ship where
   projectileCaracteristics = shipCaracteristics . projectileCaracteristics
@@ -178,8 +178,8 @@ instance HasFireRate ShipCaracteristics where
         g (ShipCaracteristics a b c d _ k) e = ShipCaracteristics a b c d e k
     in lens f g
 
-instance HasFireRange ShipCaracteristics where
-   fireRange =
+instance HasRangeType ShipCaracteristics where
+   rangeType =
     let f (ShipCaracteristics _ _ _ _ _ k)   = k
         g (ShipCaracteristics a b c d e _) k = ShipCaracteristics a b c d e k
     in lens f g

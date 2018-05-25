@@ -23,6 +23,7 @@ module PureSpace.Common.Game.Types
   (
     V2 (..),
     Team (..),
+    RangeType (..),
     Angle,
     Distance,
     DeltaTime,
@@ -31,7 +32,6 @@ module PureSpace.Common.Game.Types
     MaxVelocity ,
     Direction,
     FireRate,
-    FireRange,
     FireCooldown,
     Damage,
     Health,
@@ -43,7 +43,7 @@ module PureSpace.Common.Game.Types
     HasVelocity (..),
     HasMaxVelocity (..),
     HasFireRate (..),
-    HasFireRange (..),
+    HasRangeType (..),
     HasFireCooldown (..),
     HasDamage (..),
     HasHealth (..),
@@ -71,13 +71,16 @@ type MaxVelocity  = Velocity
 type Direction    = V2 Float
 type FireRate     = Float
 type FireCooldown = Float
-type FireRange    = Float
 type Damage       = Float
 type Health       = Float
 type MaxHealth    = Float
 type Width        = Int
 type Height       = Int
 type DeltaTime    = Float
+data RangeType    = InfiniteRange
+                  | CircleRange    Float
+                  | RectangleRange (V2 Float)
+                  deriving (Eq, Ord, Show)
 data Team         = One
                   | Two
                   deriving (Eq, Ord, Show)
@@ -100,8 +103,8 @@ class HasFireRate s where
 class HasFireCooldown s where
   fireCooldown :: Lens' s FireCooldown
 
-class HasFireRange s where
-  fireRange :: Lens' s FireRange
+class HasRangeType s where
+  rangeType :: Lens' s RangeType
 
 class HasDamage s where
   damage :: Lens' s Damage

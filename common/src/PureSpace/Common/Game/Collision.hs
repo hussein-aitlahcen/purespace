@@ -48,7 +48,6 @@ import           PureSpace.Common.Game.Geometry
 import           PureSpace.Common.Lens
 import           PureSpace.Common.Prelude
 
-data RangeType    = InfiniteRange | FiniteRange Float
 type Collision a  = (a, a)
 type GridSize     = V2 Float
 type GridDivision = V2 Float
@@ -135,22 +134,34 @@ computeRange :: (HasPosition a, HasPosition s)
              -> RangeType
              -> (s -> Bool)
              -> PQ.MinPQueue Distance s
-computeRange (Grid _ _ bs buckets) x (FiniteRange r) predicate =
-  let p               = x ^. position
-      rangeRect       = bounds p r r
-      possibleBuckets = bucketsByRectangle bs rangeRect
-      targetBuckets   = catMaybes $ flip M.lookup buckets . bucketHashId <$> possibleBuckets
-      d y             = distance (y ^. position) (x ^. position)
-      step y
-        | inRange y && predicate y = PQ.insert (d y) y
-        | otherwise                = id
-        where
-          inRange = pointInCircle p r . (^. position)
-  in foldr (flip $ foldr step) PQ.empty targetBuckets
-
 computeRange g x InfiniteRange predicate =
   let d y    = distance (y ^. position) (x ^. position)
       step y
         | predicate y = PQ.insert (d y) y
         | otherwise   = id
   in foldr step PQ.empty g
+computeRange grid x (CircleRange r) predicate =
+  let pos       = x ^. position
+      rect      = bounds pos r r
+      isInRange = pointInCircle pos r
+  in computeRangeWithType grid x rect isInRange predicate
+computeRange grid x (RectangleRange (V2 w h)) predicate =
+  let rect      = bounds (x ^. position) w h
+      isInRange = pointInRectangle rect
+  in computeRangeWithType grid x rect isInRange predicate
+
+computeRangeWithType :: (HasPosition a, HasPosition b)
+                     => Grid b
+                     -> a
+                     -> Rectangle
+                     -> (Position -> Bool)
+                     -> (b -> Bool)
+                     -> PQ.MinPQueue Distance b
+computeRangeWithType (Grid _ _ bs buckets) x rect isInRange predicate =
+  let possibleBuckets = bucketsByRectangle bs rect
+      targetBuckets   = catMaybes $ flip M.lookup buckets . bucketHashId <$> possibleBuckets
+      d y             = distance (y ^. position) (x ^. position)
+      step y
+        | isInRange (y ^. position) && predicate y = PQ.insert (d y) y
+        | otherwise                = id
+  in foldr (flip $ foldr step) PQ.empty targetBuckets

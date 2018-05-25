@@ -174,7 +174,7 @@ updateShipObjective :: GameActionWriter m
                     -> Ship
                     -> m Ship
 updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
-  case nearestEnemy (FiniteRange $ s ^. fireRange) of
+  case nearestEnemy (s ^. rangeType) of
        Just (EntityShip enemy) ->
          if s ^. fireCooldown <= 0
          then do
