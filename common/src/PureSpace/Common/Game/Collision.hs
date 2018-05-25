@@ -133,21 +133,24 @@ computeRange :: (HasPosition a, HasPosition s)
              => Grid s
              -> a
              -> RangeType
+             -> (s -> Bool)
              -> PQ.MinPQueue Distance s
-computeRange (Grid _ _ bs buckets) x (FiniteRange r) =
+computeRange (Grid _ _ bs buckets) x (FiniteRange r) predicate =
   let p               = x ^. position
       rangeRect       = bounds p r r
       possibleBuckets = bucketsByRectangle bs rangeRect
       targetBuckets   = catMaybes $ flip M.lookup buckets . bucketHashId <$> possibleBuckets
       d y             = distance (y ^. position) (x ^. position)
       step y
-        | inRange y = PQ.insert (d y) y
-        | otherwise = id
+        | inRange y && predicate y = PQ.insert (d y) y
+        | otherwise                = id
         where
           inRange = pointInCircle p r . (^. position)
   in foldr (flip $ foldr step) PQ.empty targetBuckets
 
-computeRange g x InfiniteRange =
+computeRange g x InfiniteRange predicate =
   let d y    = distance (y ^. position) (x ^. position)
-      step y = PQ.insert (d y) y
+      step y
+        | predicate y = PQ.insert (d y) y
+        | otherwise   = id
   in foldr step PQ.empty g

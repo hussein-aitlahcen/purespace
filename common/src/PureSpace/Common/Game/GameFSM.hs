@@ -211,7 +211,7 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
       let inRange                  = computeRange grid (EntityShip s) r
           shipsOnly (EntityShip _) = True
           shipsOnly _              = False
-          enemiesOnly              = PQ.filter (liftA2 (&&) shipsOnly (enemyTeamOf t))
-      in enemiesOnly inRange
+          enemyShipsOnly           = liftA2 (&&) shipsOnly (enemyTeamOf t)
+      in inRange enemyShipsOnly
     nearestEnemy :: RangeType -> Maybe Entity
     nearestEnemy = fmap snd . PQ.getMin . enemiesInRange
