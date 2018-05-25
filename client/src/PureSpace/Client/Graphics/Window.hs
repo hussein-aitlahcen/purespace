@@ -76,12 +76,11 @@ createGameWindow = do
   initialContextVersion $= openGLVersion
   atlas              <- loadAssetJSON ("sprite_atlas", spriteSheetPath)
   (_, _)             <- getArgsAndInitialize
-  window             <- createWindow "PureSpace"
+  _                  <- createWindow "PureSpace"
   (program, sprites) <- initContext atlas
   gameConf           <- view gameConfig
   gameRef            <- liftIO $ newIORef (game gameConf)
   displayCallback $= debugDisplay gameConf gameRef program sprites
-  idleCallback    $= Just (postRedisplay (Just window))
   loadInputState
   windowLoop
   where
@@ -117,7 +116,7 @@ loadInputState = do
       loop c
 
 windowLoop :: MonadIO m => m ()
-windowLoop = mainLoopEvent *> delayLoop *> windowLoop
+windowLoop = mainLoopEvent *> delayLoop *> postRedisplay Nothing *> windowLoop
   where
     delayLoop =
       let microsecond = 1000000 :: Float
@@ -204,7 +203,6 @@ debugDisplay config gameStateRef program sprites = do
   traverse_ displayEntity $ eliminateSpatialGrid (nextGame ^. spatialGrid)
   currentProgram $= Nothing
   swapBuffers
-  postRedisplay Nothing
 
 displaySprite :: (HasGameConfig a, HasGridSize a, HasPosition s, HasVelocity s, HasAngle s) => a -> Program -> Float -> Float -> VertexArrayObject -> s -> DisplayCallback
 displaySprite config program w h vao s = do
