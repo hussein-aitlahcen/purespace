@@ -126,7 +126,7 @@ updatePlayer dt grid player =
               targetPosition = b ^. position
               projCarac      = a ^. projectileCaracteristics
               projMaxV       = projCarac ^. maxVelocity
-              dir              = (signorm (direction shotPosition targetPosition) * projMaxV)
+              dir              = (normalize (direction shotPosition targetPosition) * projMaxV)
               phi              = directionAngle dir 0
               newProj        = Projectile projCarac (a ^. team) shotPosition dir phi
           in projectiles %~ (:) newProj
@@ -172,7 +172,7 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
            let pos      = s     ^. position
                maxV     = s     ^. maxVelocity
                enemyPos = enemy ^. position
-               v        = signorm (direction pos enemyPos) * maxV
+               v        = normalize (direction pos enemyPos) * maxV
            in pure $ updateVelocity v s
          Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire
          Just (EntityProjectile enemyProjectile) -> pure $ s & resetVelocity -- TODO: nothing
