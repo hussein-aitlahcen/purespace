@@ -57,6 +57,12 @@ type BucketId     = V2 Int
 data Bucket     a = Bucket BucketId (V.Vector a)                                deriving Show
 data Grid       a = Grid GridSize GridDivision BucketSize (M.IntMap (Bucket a)) deriving Show
 
+instance Foldable Bucket where
+  foldr f x (Bucket _ y) = V.foldr' f x y
+
+instance Foldable Grid where
+  foldr f x (Grid _ _ _ y) = M.foldr' (flip (foldr f)) x y
+
 unitBounds :: (HasPosition s,
                HasWidth s,
                HasHeight s)
@@ -77,19 +83,8 @@ positionBucket bs = fmap round . (/ bs)
 bucketHashId :: BucketId -> Int
 bucketHashId (V2 x y) = 32 `shiftL` x .|. y .&. 0xFFFFFFFF
 
-bucketUnits :: Bucket a -> V.Vector a
-bucketUnits (Bucket _ x) = x
-
--- TODO: make the grid foldable please
 eliminateSpatialGrid :: Ord a => Grid a -> S.Set a
-eliminateSpatialGrid (Grid _ _ _ buckets) =
-  let reduceBucket =
-        let step = S.insert
-        in V.foldr' step S.empty . bucketUnits
-      reduceBucketMap =
-        let step = S.union . reduceBucket
-        in M.foldr' step S.empty
-  in reduceBucketMap buckets
+eliminateSpatialGrid = foldr S.insert S.empty
 
 createSpatialGrid :: (HasPosition s,
                       HasWidth s,
@@ -134,37 +129,26 @@ computeCollisions (Grid _ _ _ buckets) = M.foldr' step S.empty buckets
                                                    , let a = objs V.! j
                                                    , let b = objs V.! k])
 
-vectorToPQueue :: Ord k => (a -> k) -> V.Vector a -> PQ.MinPQueue k a
-vectorToPQueue f = V.foldr' step PQ.empty
-  where
-    step x = PQ.insert (f x) x
-
--- TODO: make the grid foldable please^2
 computeRange :: (HasPosition a, HasPosition s)
              => Grid s
              -> a
              -> RangeType
              -> PQ.MinPQueue Distance s
 computeRange (Grid _ _ bs buckets) x (FiniteRange r) =
-  let p         = x ^. position
-      rangeRect = bounds p r r
-      inRange y = pointInCircle p r $ y ^. position
-      d y = distance (y ^. position) (x ^. position)
-      -- Nothing is impossible
-      targetBuckets =
-        let lk              = M.lookup . bucketHashId <$> rectangleBuckets bs rangeRect
-            f (Just bucket) = [bucket]
-            f Nothing       = []
-        in join $ f . ($ buckets) <$> lk
-  in PQ.unions $ vectorToPQueue d . V.filter inRange . bucketUnits <$> targetBuckets
+  let p               = x ^. position
+      rangeRect       = bounds p r r
+      possibleBuckets = rectangleBuckets bs rangeRect
+      targetBuckets   = catMaybes $ flip M.lookup buckets . bucketHashId <$> possibleBuckets
+      d y             = distance (y ^. position) (x ^. position)
+      step y
+        | inRange y = PQ.insert (d y) y
+        | otherwise = id
+        where
+          inRange = pointInCircle p r . (^. position)
+  in foldr (flip $ foldr step) PQ.empty targetBuckets
 
 -- TODO: make the grid foldable please^3
-computeRange (Grid _ _ _ buckets) x InfiniteRange =
-  let d y = distance (y ^. position) (x ^. position)
-      reduceBucket =
-        let step y = PQ.insert (d y) y
-        in V.foldr' step PQ.empty . bucketUnits
-      reduceBucketMap =
-        let step y = PQ.union (reduceBucket y)
-        in M.foldr' step PQ.empty
-  in reduceBucketMap buckets
+computeRange g x InfiniteRange =
+  let d y    = distance (y ^. position) (x ^. position)
+      step y = PQ.insert (d y) y
+  in foldr step PQ.empty g
