@@ -119,7 +119,7 @@ computeCollisions :: (HasPosition s,
                       Ord s)
                   => Grid s
                   -> S.Set (Collision s)
-computeCollisions (Grid _ _ _ buckets) = M.foldr step S.empty buckets
+computeCollisions (Grid _ _ _ buckets) = M.foldr' step S.empty buckets
   where
     step (Bucket _ objs) acc = go $ V.length objs
       where
