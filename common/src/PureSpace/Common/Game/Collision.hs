@@ -72,13 +72,13 @@ unitBounds u = bounds (u ^. position) (fromIntegral $ u ^. width) (fromIntegral 
 
 bucketsByRectangle :: BucketSize -> Rectangle -> [BucketId]
 bucketsByRectangle bs (a, b) =
-  let pb = bucketPosition bs
+  let pb = bucketByPosition bs
       (V2 xa ya) = pb a
       (V2 xb yb) = pb b
   in [V2 x y | x <- [xa..xb], y <- [ya..yb]]
 
-bucketPosition :: BucketSize -> Position -> BucketId
-bucketPosition bs = fmap round . (/ bs)
+bucketByPosition :: BucketSize -> Position -> BucketId
+bucketByPosition bs = fmap round . (/ bs)
 
 bucketHashId :: BucketId -> Int
 bucketHashId (V2 x y) = 32 `shiftL` x .|. y .&. 0xFFFFFFFF
@@ -147,7 +147,6 @@ computeRange (Grid _ _ bs buckets) x (FiniteRange r) =
           inRange = pointInCircle p r . (^. position)
   in foldr (flip $ foldr step) PQ.empty targetBuckets
 
--- TODO: make the grid foldable please^3
 computeRange g x InfiniteRange =
   let d y    = distance (y ^. position) (x ^. position)
       step y = PQ.insert (d y) y
