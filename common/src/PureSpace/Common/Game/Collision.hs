@@ -80,10 +80,16 @@ bucketHashId (V2 x y) = 32 `shiftL` x .|. y .&. 0xFFFFFFFF
 bucketUnits :: Bucket a -> V.Vector a
 bucketUnits (Bucket _ x) = x
 
+-- TODO: make the grid foldable please
 eliminateSpatialGrid :: Ord a => Grid a -> S.Set a
-eliminateSpatialGrid (Grid _ _ _ buckets) = S.fromList $ V.toList $ M.foldr' reduction V.empty buckets
-  where
-    reduction b units = bucketUnits b V.++ units
+eliminateSpatialGrid (Grid _ _ _ buckets) =
+  let reduceBucket =
+        let step = S.insert
+        in V.foldr' step S.empty . bucketUnits
+      reduceBucketMap =
+        let step = S.union . reduceBucket
+        in M.foldr' step S.empty
+  in reduceBucketMap buckets
 
 createSpatialGrid :: (HasPosition s,
                       HasWidth s,
