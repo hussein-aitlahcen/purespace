@@ -70,15 +70,15 @@ unitBounds :: (HasPosition s,
            -> Rectangle
 unitBounds u = bounds (u ^. position) (fromIntegral $ u ^. width) (fromIntegral $ u ^. height)
 
-rectangleBuckets :: BucketSize -> Rectangle -> [BucketId]
-rectangleBuckets bs (a, b) =
-  let pb = positionBucket bs
+bucketsByRectangle :: BucketSize -> Rectangle -> [BucketId]
+bucketsByRectangle bs (a, b) =
+  let pb = bucketPosition bs
       (V2 xa ya) = pb a
       (V2 xb yb) = pb b
   in [V2 x y | x <- [xa..xb], y <- [ya..yb]]
 
-positionBucket :: BucketSize -> Position -> BucketId
-positionBucket bs = fmap round . (/ bs)
+bucketPosition :: BucketSize -> Position -> BucketId
+bucketPosition bs = fmap round . (/ bs)
 
 bucketHashId :: BucketId -> Int
 bucketHashId (V2 x y) = 32 `shiftL` x .|. y .&. 0xFFFFFFFF
@@ -95,7 +95,7 @@ createSpatialGrid :: (HasPosition s,
                   -> Grid s
 createSpatialGrid gs gd@(V2 gdw gdh) units =
   let bs               = gs / gd
-      rc               = rectangleBuckets bs
+      rc               = bucketsByRectangle bs
       -- (unit, (tl, br))
       unitsWithCorners = zip units $ unitBounds <$> units
       -- (unit, [bucket_hash])
@@ -137,7 +137,7 @@ computeRange :: (HasPosition a, HasPosition s)
 computeRange (Grid _ _ bs buckets) x (FiniteRange r) =
   let p               = x ^. position
       rangeRect       = bounds p r r
-      possibleBuckets = rectangleBuckets bs rangeRect
+      possibleBuckets = bucketsByRectangle bs rangeRect
       targetBuckets   = catMaybes $ flip M.lookup buckets . bucketHashId <$> possibleBuckets
       d y             = distance (y ^. position) (x ^. position)
       step y
