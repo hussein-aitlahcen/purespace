@@ -134,7 +134,7 @@ updatePlayer dt grid player =
               targetPosition = b ^. position
               projCarac      = a ^. projectileCaracteristics
               projMaxV       = projCarac ^. maxVelocity
-              dir              = (normalize (direction shotPosition targetPosition) * projMaxV)
+              dir            = (normalize (direction shotPosition targetPosition) * projMaxV)
               phi              = directionAngle dir 0
               newProj        = Projectile projCarac (a ^. team) shotPosition dir phi
           in projectiles %~ (:) newProj
