@@ -198,8 +198,8 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
   where
     resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
     reduceFireCooldown = fireCooldown -~ dt
-    resetVelocity = velocity .~ V2 0 0
-    fireEnemy e =
+    resetVelocity      = velocity .~ V2 0 0
+    fireEnemy e        =
       let pos         = s ^. position
           enemyPos    = e ^. position
           d           = direction pos enemyPos

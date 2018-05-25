@@ -49,11 +49,11 @@ scale2D :: V2 Float -> Matrix -> Matrix
 scale2D (V2 x y) = (!*!) (scaled (V4 x y 1 1))
 
 rotate2D :: Float -> Matrix -> Matrix
-rotate2D radians matrix = matrix !*! rotationMatrix
-  where
-    rotationMatrix = m33_to_m44
-                     $ fromQuaternion
-                     $ axisAngle (V3 0 0 1) radians
+rotate2D radians matrix =
+  let rotationMatrix = m33_to_m44
+                       $ fromQuaternion
+                       $ axisAngle (V3 0 0 1) radians
+  in matrix !*! rotationMatrix
 
 ortho2D :: Float -> Float -> Float -> Matrix
 ortho2D va w h

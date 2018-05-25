@@ -113,20 +113,20 @@ computeCollisions :: (HasPosition s,
                       Ord s)
                   => Grid s
                   -> S.Set (Collision s)
-computeCollisions (Grid _ _ _ buckets) = M.foldr' step S.empty buckets
-  where
-    step (Bucket _ objs) acc = go $ V.length objs
-      where
-        go 0 = acc
-        go 1 = acc
-        go l = S.union acc $ S.fromList (catMaybes [bool
-                                                     (overlaps (unitBounds a) (unitBounds b))
-                                                     (Just (a, b))
-                                                     Nothing
-                                                   | j <- [0..l-2]
-                                                   , k <- [j+1..l-1]
-                                                   , let a = objs V.! j
-                                                   , let b = objs V.! k])
+computeCollisions (Grid _ _ _ buckets) =
+  let step (Bucket _ objs) acc =
+        let go 0 = acc
+            go 1 = acc
+            go l = S.union acc $ S.fromList (catMaybes [bool
+                                                         (overlaps (unitBounds a) (unitBounds b))
+                                                         (Just (a, b))
+                                                         Nothing
+                                                       | j <- [0..l-2]
+                                                       , k <- [j+1..l-1]
+                                                       , let a = objs V.! j
+                                                       , let b = objs V.! k])
+        in go $ V.length objs
+  in M.foldr' step S.empty buckets
 
 computeRange :: (HasPosition a, HasPosition s)
              => Grid s
@@ -135,7 +135,7 @@ computeRange :: (HasPosition a, HasPosition s)
              -> (s -> Bool)
              -> PQ.MinPQueue Distance s
 computeRange g x InfiniteRange predicate =
-  let d y    = distance (y ^. position) (x ^. position)
+  let d y = distance (y ^. position) (x ^. position)
       step y
         | predicate y = PQ.insert (d y) y
         | otherwise   = id
