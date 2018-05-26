@@ -34,7 +34,6 @@ module PureSpace.Common.Game.Ship
 import           PureSpace.Common.Game.Projectile
 import           PureSpace.Common.Lens            (Lens', lens)
 
-
 data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity Angle                      deriving (Eq, Ord, Show)
 data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate RangeType deriving (Eq, Ord, Show)
 data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving (Eq, Ord, Show)
