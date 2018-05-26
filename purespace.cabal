@@ -42,6 +42,7 @@ library
                      , PureSpace.Common.Resource
                      , PureSpace.Common.Resource.Error
                      , PureSpace.Common.Game.GameFSM
+                     , PureSpace.Common.Game.Fleet
                      , PureSpace.Common.Game.State
                      , PureSpace.Common.Game.Config
                      , PureSpace.Common.Game.Error
