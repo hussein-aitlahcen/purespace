@@ -25,7 +25,6 @@ module PureSpace.Client.Graphics.Window
   )
   where
 
-import           Data.IORef
 import qualified Data.Map                      as M
 import           Graphics.GLUtil.BufferObjects (makeBuffer)
 import           Graphics.UI.GLUT              as GLUT hiding (One, Position,
@@ -70,34 +69,22 @@ createGameWindow :: (MonadIO m,
                      AsGraphicsError e,
                      AsAssetError e,
                      AsShaderError e,
-                     AsShaderProgramError e)
-                 => m ()
-createGameWindow = do
+                     AsShaderProgramError e,
+                     HasGameState c,
+                     HasSpatialGrid c
+                    )
+                 => TChan c -> m ()
+createGameWindow sink = do
   initialContextVersion $= openGLVersion
   atlas              <- loadAssetJSON ("sprite_atlas", spriteSheetPath)
   (_, _)             <- getArgsAndInitialize
   _                  <- createWindow "PureSpace"
   (program, sprites) <- initContext atlas
   gameConf           <- view gameConfig
-  gameRef            <- liftIO $ newIORef (game gameConf)
-  displayCallback $= debugDisplay gameConf gameRef program sprites
   windowSize $= Size 800 600
+  displayCallback $= debugDisplay gameConf sink program sprites
   loadInputState
   windowLoop
-  where
-    game (GameConfig a b) =
-      GameState (createSpatialGrid a b (EntityShip <$> oneShips <> twoShips))
-      [PlayerState One [] oneShips 0 [],
-       PlayerState Two [] twoShips 0 []]
-      where
-        pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 1500 1500)
-        sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 (CircleRange 500)
-        oneShips = [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
-                    Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
-                    Ship sc One 100 0 (V2 0 0) (V2 0 0) 0]
-        twoShips = [Ship sc Two 100 0 (V2 1500 1000) (V2 0 0) 0,
-                    Ship sc Two 100 0 (V2 1500 500) (V2 0 0) 0,
-                    Ship sc Two 100 0 (V2 1500 0) (V2 0 0) 0]
 
 loadInputState :: (MonadIO m,
                   MonadState s m,
@@ -179,20 +166,20 @@ VISUAL TESTING PURPOSES ONLY
 
 debugDisplay :: (HasGameConfig s,
                  HasGridSize s,
+                 HasGameState c,
+                 HasSpatialGrid c,
                  HasGridDivision s)
              => s
-             -> IORef GameState
+             -> TChan c
              -> Program
              -> SpritesByName
              -> DisplayCallback
-debugDisplay config gameStateRef program sprites = do
+debugDisplay config sink program sprites = do
   Size w h <- GLUT.get windowSize
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
-  game <- liftIO $ readIORef gameStateRef
-  let elapsedSeconds = 1 / fromIntegral fps -- totally fake so what ?
-      nextGame       = execState (runReaderT (updateGame elapsedSeconds) config) game
-      (Just shipVAO) = sprites `vaoByName` "playerShip1_blue.png"
+  nextGame <- liftIO $ atomically $ readTChan sink
+  let (Just shipVAO) = sprites `vaoByName` "playerShip1_blue.png"
       (Just projVAO) = sprites `vaoByName` "laserBlue05.png"
       display :: (HasPosition s, HasVelocity s, HasAngle s) => VertexArrayObject -> s -> DisplayCallback
       display                            = displaySprite config program (fromIntegral w) (fromIntegral h)
@@ -200,7 +187,6 @@ debugDisplay config gameStateRef program sprites = do
       displayEntity (EntityProjectile p) = display projVAO p
       -- TODO: add base vao
       displayEntity _                    = putStrLn "bases not drawable yet"
-  writeIORef gameStateRef nextGame
   traverse_ displayEntity $ eliminateSpatialGrid (nextGame ^. spatialGrid)
   currentProgram $= Nothing
   swapBuffers

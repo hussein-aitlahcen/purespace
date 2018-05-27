@@ -33,20 +33,14 @@ import           PureSpace.Client.State
 import           PureSpace.Common.Concurrent
 import           PureSpace.Common.Game.Logic.Loop
 import           PureSpace.Common.Lens
-import           System.Clock
 
-runGraphics :: IO ()
-runGraphics =
-  let go = evalStateT (runReaderT (runExceptT createGameWindow) defaultClientConfig) (initialClientState (defaultClientConfig ^. gameConfig))
+runGraphics :: TChan GameState -> IO ()
+runGraphics sink =
+  let go = evalStateT (runReaderT (runExceptT (createGameWindow sink)) defaultClientConfig) (initialClientState (defaultClientConfig ^. gameConfig))
       displayResult res = case res of
         Left message -> print (message :: ClientError)
         Right _      -> putStrLn "Unseen string"
   in go >>= displayResult
-
-runLogic :: IO ()
-runLogic =
-  do initial <- liftIO $ toNanoSecs <$> getTime MonotonicRaw
-     evalStateT logicLoop (Timer initial)
 
 -- | Makes every thread return an empty MVar,
 -- so the main thread can wait for them.
@@ -58,8 +52,9 @@ forkLoop thread = do
 
 runClient :: IO ()
 runClient = do
-  graphicThread <- forkLoop $ void runGraphics
-  logicThread   <- forkLoop runLogic
+  sink <- liftIO $ atomically newTChan
+  graphicThread <- forkLoop $ void $ runGraphics sink
+  logicThread   <- forkLoop (runLogic sink (defaultClientConfig ^. gameConfig))
   -- Waiting for all threads to finish
   mapM_ takeMVar [graphicThread, logicThread]
   putStrLn "Finished"
