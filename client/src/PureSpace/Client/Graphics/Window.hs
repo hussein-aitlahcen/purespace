@@ -81,6 +81,7 @@ createGameWindow = do
   gameConf           <- view gameConfig
   gameRef            <- liftIO $ newIORef (game gameConf)
   displayCallback $= debugDisplay gameConf gameRef program sprites
+  windowSize $= Size 800 600
   loadInputState
   windowLoop
   where
