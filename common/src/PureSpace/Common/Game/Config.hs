@@ -36,7 +36,7 @@ import           PureSpace.Common.Lens           (Lens', lens)
 data GameConfig = GameConfig GridSize GridDivision deriving Show
 
 defaultGameConfig :: GameConfig
-defaultGameConfig = GameConfig (V2 1500 1000) (V2 15 10)
+defaultGameConfig = GameConfig (V2 1000 1000) (V2 10 10)
 
 class HasGameConfig s where
   gameConfig :: Lens' s GameConfig

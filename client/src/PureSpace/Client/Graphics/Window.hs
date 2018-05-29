@@ -85,19 +85,19 @@ createGameWindow = do
   loadInputState
   windowLoop
   where
-    game (GameConfig a b) =
-      GameState (createSpatialGrid a b (EntityShip <$> oneShips <> twoShips))
-      [PlayerState One [] oneShips 0 [],
-       PlayerState Two [] twoShips 0 []]
+    game (GameConfig a b) = GameState (createSpatialGrid a b ships)
+                            [PlayerState 0 One 0, PlayerState 0 Two 0]
+                            ships
+                            0
       where
         pc = ProjectileCaracteristics (ProjectileType Laser 2 6) 10 (V2 1500 1500)
         sc = ShipCaracteristics (ShipType Fighter 100 75) pc 100 (V2 300 300) 1 (CircleRange 500)
-        oneShips = [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0,
-                    Ship sc One 100 0 (V2 0 500) (V2 0 0) 0,
-                    Ship sc One 100 0 (V2 0 0) (V2 0 0) 0]
-        twoShips = [Ship sc Two 100 0 (V2 1500 1000) (V2 0 0) 0,
-                    Ship sc Two 100 0 (V2 1500 500) (V2 0 0) 0,
-                    Ship sc Two 100 0 (V2 1500 0) (V2 0 0) 0]
+        ships = EntityShip <$> [Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0 0 0,
+                                Ship sc One 100 0 (V2 0 500) (V2 0 0) 0 1 0,
+                                Ship sc One 100 0 (V2 0 0) (V2 0 0) 0 2 0,
+                                Ship sc Two 100 0 (V2 1000 1000) (V2 0 0) 0 3 1,
+                                Ship sc Two 100 0 (V2 1000 500) (V2 0 0) 0 4 1,
+                                Ship sc Two 100 0 (V2 1000 0) (V2 0 0) 0 5 1]
 
 loadInputState :: (MonadIO m,
                   MonadState s m,

@@ -60,7 +60,7 @@ instance Foldable Bucket where
   foldr f x (Bucket _ y) = V.foldr' f x y
 
 instance Foldable Grid where
-  foldr f x (Grid _ _ _ y) = M.foldr' (flip (foldr f)) x y
+  foldr f x (Grid _ _ _ y) = foldrr f x y
 
 unitBounds :: (HasPosition s,
                HasWidth s,
@@ -110,23 +110,26 @@ createSpatialGrid gs gd@(V2 gdw gdh) units =
 computeCollisions :: (HasPosition s,
                       HasWidth s,
                       HasHeight s,
+                      HasPosition a,
                       Ord s)
                   => Grid s
-                  -> S.Set (Collision s)
-computeCollisions (Grid _ _ _ buckets) =
-  let step (Bucket _ objs) acc =
-        let go 0 = acc
-            go 1 = acc
-            go l = S.union acc $ S.fromList (catMaybes [bool
-                                                         (overlaps (unitBounds a) (unitBounds b))
-                                                         (Just (a, b))
-                                                         Nothing
-                                                       | j <- [0..l-2]
-                                                       , k <- [j+1..l-1]
-                                                       , let a = objs V.! j
-                                                       , let b = objs V.! k])
-        in go $ V.length objs
-  in M.foldr' step S.empty buckets
+                  -> a
+                  -> S.Set s
+
+computeCollisions (Grid _ _ _ buckets) x = undefined
+  -- let step (Bucket _ objs) acc =
+  --       let go 0 = acc
+  --           go 1 = acc
+  --           go l = S.union acc $ S.fromList (catMaybes [bool
+  --                                                        (overlaps (unitBounds a) (unitBounds b))
+  --                                                        (Just (a, b))
+  --                                                        Nothing
+  --                                                      | j <- [0..l-2]
+  --                                                      , k <- [j+1..l-1]
+  --                                                      , let a = objs V.! j
+  --                                                      , let b = objs V.! k])
+  --       in go $ V.length objs
+  -- in M.foldr' step S.empty buckets
 
 computeRange :: (HasPosition a, HasPosition s)
              => Grid s
@@ -164,4 +167,4 @@ computeRangeWithType (Grid _ _ bs buckets) x rect isInRange predicate =
       step y
         | isInRange (y ^. position) && predicate y = PQ.insert (d y) y
         | otherwise                = id
-  in foldr (flip $ foldr step) PQ.empty targetBuckets
+  in foldrr step PQ.empty targetBuckets

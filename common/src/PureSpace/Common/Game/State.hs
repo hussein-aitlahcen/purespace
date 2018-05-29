@@ -24,23 +24,24 @@ module PureSpace.Common.Game.State
     HasGameState (..),
     HasSpatialGrid (..),
     HasPlayers (..),
+    HasNextObjectId (..),
     initialGameState
   )
   where
 
 import           PureSpace.Common.Game.Collision
-import           PureSpace.Common.Game.Entity
 import           PureSpace.Common.Game.Config
+import           PureSpace.Common.Game.Entity
 import           PureSpace.Common.Game.Player.State
 import           PureSpace.Common.Lens              (Lens', lens)
 
 -- | The state of the game, namely the current situation
 -- of the players. Victory or loss condition can be inferred
 -- from the situation of players at any given time.
-data GameState = GameState (Grid Entity) [PlayerState]
+data GameState = GameState (Grid Entity) [PlayerState] [Entity] ObjectId
 
 initialGameState :: GameConfig -> GameState
-initialGameState (GameConfig gs gd) = GameState (createSpatialGrid gs gd []) []
+initialGameState (GameConfig gs gd) = GameState (createSpatialGrid gs gd []) [] [] 0
 
 -- To ponder: maybe an `Ixed` would be better here ?
 -- This might need to be changed. We will see what's more
@@ -58,14 +59,29 @@ class HasSpatialGrid s where
 class HasPlayers p where
   players :: Lens' p [PlayerState]
 
+class HasNextObjectId p where
+  nextObjectId :: Lens' p ObjectId
+
 instance HasPlayers GameState where
   players =
-    let f (GameState _ b)   = b
-        g (GameState a _) b = GameState a b
+    let f (GameState _ b _ _)   = b
+        g (GameState a _ c d) b = GameState a b c d
     in lens f g
 
 instance HasSpatialGrid GameState where
   spatialGrid =
-    let f (GameState a _)   = a
-        g (GameState _ b) a = GameState a b
+    let f (GameState a _ _ _)   = a
+        g (GameState _ b c d) a = GameState a b c d
+    in lens f g
+
+instance HasEntities GameState where
+  entities =
+    let f (GameState _ _ c _)   = c
+        g (GameState a b _ d) c = GameState a b c d
+    in lens f g
+
+instance HasNextObjectId GameState where
+  nextObjectId =
+    let f (GameState _ _ _ d)   = d
+        g (GameState a b c _) d = GameState a b c d
     in lens f g

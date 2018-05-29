@@ -35,9 +35,9 @@ import           Numeric.Natural
 import           PureSpace.Common.Game.Ship (ShipCaracteristics, HasShipCaracteristics(..))
 import           PureSpace.Common.Lens      (Lens', lens)
 
-type ShipAmount = Natural
+type ShipAmount      = Natural
 type RespawnCooldown = Natural
-type Cost = Natural
+type Cost            = Natural
 
 -- | Maybe this would be expressed more elegantly using a Map ?
 data FleetComposition = FleetComposition ShipCaracteristics ShipAmount deriving (Eq, Ord, Show)

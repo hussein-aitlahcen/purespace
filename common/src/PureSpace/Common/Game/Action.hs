@@ -25,8 +25,7 @@ module PureSpace.Common.Game.Action
   )
   where
 
-import           PureSpace.Common.Game.Ship
-import           PureSpace.Common.Prelude
+import           PureSpace.Common.Game.Player.State
 
 data GameAction where
   ShotTarget :: (HasPosition p,
@@ -34,12 +33,8 @@ data GameAction where
                  HasFireRate p,
                  HasFireCooldown p,
                  HasProjectileCaracteristics p,
-                 HasPosition t,
-                 Show t,
-                 Show p)
+                 HasPosition t)
              => p
              -> t
              -> GameAction
 
-instance Show GameAction where
-  show (ShotTarget a b) = "shot: " <> show a <> " => " <> show b

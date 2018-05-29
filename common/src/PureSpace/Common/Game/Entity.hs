@@ -19,7 +19,10 @@
 
 module PureSpace.Common.Game.Entity
   (
+    module PureSpace.Common.Game.Base,
+    module PureSpace.Common.Game.Ship,
     Entity (..),
+    HasEntities (..),
   )
   where
 
@@ -31,6 +34,29 @@ data Entity = EntityShip       Ship
             | EntityProjectile Projectile
             | EntityBase       Base
             deriving (Eq, Ord, Show)
+
+class HasEntities s where
+  entities :: Lens' s [Entity]
+
+instance HasPlayerId Entity where
+  playerId =
+    let f (EntityShip       s)    = s    ^. playerId
+        f (EntityProjectile proj) = proj ^. playerId
+        f (EntityBase       b)    = b    ^. playerId
+        g (EntityShip       s) pid    = EntityShip       $ s    & playerId .~ pid
+        g (EntityProjectile proj) pid = EntityProjectile $ proj & playerId .~ pid
+        g (EntityBase       b) pid    = EntityBase       $ b    & playerId .~ pid
+    in lens f g
+
+instance HasObjectId Entity where
+  objectId =
+    let f (EntityShip       s)    = s    ^. objectId
+        f (EntityProjectile proj) = proj ^. objectId
+        f (EntityBase       b)    = b    ^. objectId
+        g (EntityShip       s) oid    = EntityShip       $ s    & objectId .~ oid
+        g (EntityProjectile proj) oid = EntityProjectile $ proj & objectId .~ oid
+        g (EntityBase       b) oid    = EntityBase       $ b    & objectId .~ oid
+    in lens f g
 
 instance HasTeam Entity where
   team =

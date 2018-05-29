@@ -22,6 +22,8 @@
 module PureSpace.Common.Game.Types
   (
     V2 (..),
+    PlayerId,
+    ObjectId,
     Team (..),
     RangeType (..),
     Angle,
@@ -38,6 +40,8 @@ module PureSpace.Common.Game.Types
     MaxHealth,
     Width,
     Height,
+    HasPlayerId (..),
+    HasObjectId (..),
     HasTeam (..),
     HasPosition (..),
     HasVelocity (..),
@@ -54,8 +58,9 @@ module PureSpace.Common.Game.Types
   )
   where
 
-import           Linear                (V2 (..))
-import           PureSpace.Common.Lens (Lens')
+import           Linear                   (V2 (..))
+import           PureSpace.Common.Lens    (Lens')
+import           PureSpace.Common.Prelude
 
 {-
   FireRate     = per second
@@ -63,6 +68,8 @@ import           PureSpace.Common.Lens (Lens')
   FireCooldown = next available shot
 -}
 
+type ObjectId     = Int64
+type PlayerId     = ObjectId
 type Angle        = Float
 type Distance     = Float
 type Position     = V2 Float
@@ -84,6 +91,12 @@ data RangeType    = InfiniteRange
 data Team         = One
                   | Two
                   deriving (Eq, Ord, Show)
+
+class HasObjectId t where
+  objectId :: Lens' t ObjectId
+
+class HasPlayerId t where
+  playerId :: Lens' t PlayerId
 
 class HasTeam t where
   team :: Lens' t Team

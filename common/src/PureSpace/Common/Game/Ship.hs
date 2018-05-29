@@ -34,22 +34,31 @@ module PureSpace.Common.Game.Ship
 import           PureSpace.Common.Game.Projectile
 import           PureSpace.Common.Lens            (Lens', lens)
 
-data Ship               = Ship ShipCaracteristics Team Health FireCooldown Position Velocity Angle                      deriving (Eq, Ord, Show)
-data ShipCaracteristics = ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate RangeType deriving (Eq, Ord, Show)
-data ShipType           = ShipType ShipIdentifier Width Height                                                          deriving (Eq, Ord, Show)
-data ShipIdentifier     = Fighter
-                        | Bomber
-                        | Frigate
-                        | Corvette
-                        | Destroyer
-                        | Cruiser
-                        | SupportShip
-                        | BattleShip
-                        | MotherShip
-                        | BattleStar
-                        | BaseStar
-                        | Juggernaut
-                        deriving (Eq, Ord, Show)
+data Ship =
+  Ship ShipCaracteristics Team Health FireCooldown Position Velocity Angle ObjectId PlayerId
+  deriving (Eq, Ord, Show)
+
+data ShipCaracteristics =
+  ShipCaracteristics ShipType ProjectileCaracteristics MaxHealth MaxVelocity FireRate RangeType
+  deriving (Eq, Ord, Show)
+
+data ShipType =
+  ShipType ShipIdentifier Width Height
+  deriving (Eq, Ord, Show)
+
+data ShipIdentifier = Fighter
+                    | Bomber
+                    | Frigate
+                    | Corvette
+                    | Destroyer
+                    | Cruiser
+                    | SupportShip
+                    | BattleShip
+                    | MotherShip
+                    | BattleStar
+                    | BaseStar
+                    | Juggernaut
+                    deriving (Eq, Ord, Show)
 
 class HasShip s where
   ship :: Lens' s Ship
@@ -68,44 +77,56 @@ instance HasShip Ship where
 
 instance HasShipCaracteristics Ship where
   shipCaracteristics =
-    let f (Ship a _ _ _ _ _ _)   = a
-        g (Ship _ b c d e k l) a = Ship a b c d e k l
+    let f (Ship a _ _ _ _ _ _ _ _)  = a
+        g (Ship _ b c d e k l m o) a = Ship a b c d e k l m o
     in lens f g
 
 instance HasTeam Ship where
   team =
-    let f (Ship _ b _ _ _ _ _)   = b
-        g (Ship a _ c d e k l) b = Ship a b c d e k l
+    let f (Ship _ b _ _ _ _ _ _ _)  = b
+        g (Ship a _ c d e k l m o) b = Ship a b c d e k l m o
     in lens f g
 
 instance HasHealth Ship where
   health =
-    let f (Ship _ _ c _ _ _ _)   = c
-        g (Ship a b _ d e k l) c = Ship a b c d e k l
+    let f (Ship _ _ c _ _ _ _ _ _)  = c
+        g (Ship a b _ d e k l m o) c = Ship a b c d e k l m o
     in lens f g
 
 instance HasFireCooldown Ship where
   fireCooldown =
-    let f (Ship _ _ _ d _ _ _)   = d
-        g (Ship a b c _ e k l) d = Ship a b c d e k l
+    let f (Ship _ _ _ d _ _ _ _ _)  = d
+        g (Ship a b c _ e k l m o) d = Ship a b c d e k l m o
     in lens f g
 
 instance HasPosition Ship where
   position =
-    let f (Ship _ _ _ _ e _ _)   = e
-        g (Ship a b c d _ k l) e = Ship a b c d e k l
+    let f (Ship _ _ _ _ e _ _ _ _)  = e
+        g (Ship a b c d _ k l m o) e = Ship a b c d e k l m o
     in lens f g
 
 instance HasVelocity Ship where
   velocity =
-    let f (Ship _ _ _ _ _ k _)   = k
-        g (Ship a b c d e _ l) k = Ship a b c d e k l
+    let f (Ship _ _ _ _ _ k _ _ _)  = k
+        g (Ship a b c d e _ l m o) k = Ship a b c d e k l m o
     in lens f g
 
 instance HasAngle Ship where
   angle =
-    let f (Ship _ _ _ _ _ _ l)   = l
-        g (Ship a b c d e k _) l = Ship a b c d e k l
+    let f (Ship _ _ _ _ _ _ l _ _)   = l
+        g (Ship a b c d e k _ m o) l = Ship a b c d e k l m o
+    in lens f g
+
+instance HasObjectId Ship where
+  objectId =
+    let f (Ship _ _ _ _ _ _ _ m _)   = m
+        g (Ship a b c d e k l _ o) m = Ship a b c d e k l m o
+    in lens f g
+
+instance HasPlayerId Ship where
+  playerId =
+    let f (Ship _ _ _ _ _ _ _ _ o)   = o
+        g (Ship a b c d e k l m _) o = Ship a b c d e k l m o
     in lens f g
 
 instance HasShipType Ship where

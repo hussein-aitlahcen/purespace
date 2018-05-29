@@ -22,15 +22,19 @@ module PureSpace.Common.Prelude
     module Data.Semigroup,
     module Data.Bifunctor,
     module Data.Maybe,
+    module Data.Int,
     safeHead,
     bool,
     traverse_,
-    enumerate
+    foldrM,
+    enumerate,
+    foldrr
   )
   where
 
 import           Data.Bifunctor
-import           Data.Foldable  (traverse_)
+import           Data.Foldable  (traverse_, foldrM)
+import           Data.Int
 import           Data.Maybe
 import           Data.Semigroup
 
@@ -43,3 +47,6 @@ bool cond true false = if cond then true else false
 
 enumerate :: [a] -> [(Int, a)]
 enumerate = zip [0..]
+
+foldrr :: (Foldable t, Foldable f) => (a -> b -> b) -> b -> t (f a) -> b
+foldrr f = foldr (flip (foldr f))

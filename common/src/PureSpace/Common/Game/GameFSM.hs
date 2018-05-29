@@ -60,25 +60,24 @@ updateGame :: (MonadState s m,
                HasGameState s,
                HasSpatialGrid s,
                HasPlayers s,
+               HasEntities s,
+               HasNextObjectId s,
                HasGameConfig r,
                HasGridSize r,
                HasGridDivision r)
            => DeltaTime
            -> m ()
-updateGame dt = do
-  gameState %= updatePlayers dt
-  newGrid <- nextGrid
-  gameState %= (spatialGrid .~ newGrid)
-  pure ()
+updateGame dt = updatePlayers dt *> updateEntities dt *> updateSpatialGrid
 
-nextGrid :: (MonadState s m,
-             HasGameState s,
-             HasPlayers s,
-             HasSpatialGrid s)
-        => m (Grid Entity)
-nextGrid = do
+updateSpatialGrid :: (MonadState s m,
+                      HasGameState s,
+                      HasEntities s,
+                      HasSpatialGrid s)
+                  => m ()
+updateSpatialGrid = do
   (Grid gs gd _ _ ) <- use spatialGrid
-  createSpatialGrid gs gd <$> getEntities
+  nextGrid <- createSpatialGrid gs gd <$> use entities
+  spatialGrid .= nextGrid
 
 enemyTeamOf :: HasTeam s => Team -> (s -> Bool)
 enemyTeamOf t = (/=) t . view team
@@ -86,82 +85,90 @@ enemyTeamOf t = (/=) t . view team
 allyTeamOf :: HasTeam s => Team -> (s -> Bool)
 allyTeamOf t = (==) t . view team
 
-getBases :: (MonadState s m, HasPlayers s) => m [Base]
-getBases = (view bases =<<) <$> use players
+getBases :: (MonadState s m, HasEntities s) => m [Base]
+getBases =
+  let step (EntityBase x) acc = x:acc
+      step _ acc              = acc
+  in foldr step [] <$> use entities
 
-getShips :: (MonadState s m, HasPlayers s) => m [Ship]
-getShips = (view ships =<<) <$> use players
+getShips :: (MonadState s m, HasEntities s) => m [Ship]
+getShips =
+  let step (EntityShip x) acc = x:acc
+      step _ acc              = acc
+  in foldr step [] <$> use entities
 
-getProjectiles :: (MonadState s m, HasPlayers s) => m [Projectile]
-getProjectiles = (view projectiles =<<) <$> use players
+getProjectiles :: (MonadState s m, HasEntities s) => m [Projectile]
+getProjectiles =
+  let step (EntityProjectile x) acc = x:acc
+      step _ acc                    = acc
+  in foldr step [] <$> use entities
 
-getEntities :: (MonadState s m, HasPlayers s) => m [Entity]
-getEntities = do
-  s <- fmap EntityShip       <$> getShips
-  b <- fmap EntityBase       <$> getBases
-  p <- fmap EntityProjectile <$> getProjectiles
-  pure $ s <> b <> p
+enemiesInRange :: (HasPosition a, HasTeam a) => Grid Entity -> a -> RangeType -> PQ.MinPQueue Distance Entity
+enemiesInRange grid entity range =
+  let inRange                  = computeRange grid entity range
+      shipsOnly (EntityShip _) = True
+      shipsOnly _              = False
+      enemyShipsOnly           = liftA2 (&&) shipsOnly (enemyTeamOf (entity ^. team))
+  in inRange enemyShipsOnly
 
-getTeamEntities :: (MonadState s m, HasPlayers s) => Team -> m [Entity]
-getTeamEntities t = do
-  s <- fmap EntityShip       . ofTeam <$> getShips
-  b <- fmap EntityBase       . ofTeam <$> getBases
-  p <- fmap EntityProjectile . ofTeam <$> getProjectiles
-  pure $ s <> b <> p
-  where
-    ofTeam :: (HasTeam s) => [s] -> [s]
-    ofTeam = filter (allyTeamOf t)
+nearestEnemy :: (HasPosition a, HasTeam a) => Grid Entity -> a -> RangeType -> Maybe Entity
+nearestEnemy grid entity range =
+  let enemies = enemiesInRange grid entity range
+  in snd <$> PQ.getMin enemies
 
-updatePlayers :: (HasSpatialGrid s,
-                  HasPlayers s)
-              => DeltaTime
-              -> s
-              -> s
-updatePlayers dt x = x & players %~ fmap (updatePlayer dt (x ^. spatialGrid))
+updatePlayers :: (MonadState s m, HasPlayers s, HasEntities s) => DeltaTime -> m ()
+updatePlayers dt = do
+  let playerBases p = filter ((== p ^. playerId) . view playerId) <$> getBases
+      update      p = (p &) . updatePlayer dt <$> playerBases p
+  players' <- traverse update =<< use players
+  players .= players'
 
-updatePlayer :: DeltaTime
+updatePlayer :: (HasCash a, HasIncome b) => DeltaTime -> [b] -> a -> a
+updatePlayer dt incomeSources =
+  let totalIncomePerSecond = sum     $ view income <$> incomeSources
+      currentIncome        = round $ fromIntegral totalIncomePerSecond / dt
+  in cash +~ currentIncome
+
+updateEntities :: (MonadState s m,
+                   HasEntities s,
+                   HasNextObjectId s,
+                   HasSpatialGrid s)
+               => DeltaTime
+               -> m ()
+updateEntities dt = do
+  grid <- use spatialGrid
+  e    <- use entities
+  let (actions, entities') = traverse (updateEntity dt grid) e
+  entities'' <- foldrM executeGameAction entities' actions
+  entities .= entities''
+
+executeGameAction :: (MonadState s m,
+                      HasNextObjectId s)
+                  => GameAction
+                  -> [Entity]
+                  -> m [Entity]
+executeGameAction (ShotTarget a b) e = do
+  nextId  <- use nextObjectId
+  let shotPosition   = a ^. position
+      targetPosition = b ^. position
+      projCarac      = a ^. projectileCaracteristics
+      projMaxV       = projCarac ^. maxVelocity
+      dir            = normalize (direction shotPosition targetPosition) * projMaxV
+      phi              = directionAngle dir 0
+      newProj        = EntityProjectile $ Projectile projCarac (a ^. team) shotPosition dir phi nextId 0
+  pure $ newProj:e
+
+updateEntity :: GameActionWriter m
+             => DeltaTime
              -> Grid Entity
-             -> PlayerState
-             -> PlayerState
-updatePlayer dt grid player =
-  let (nextPlayer, actions) = runWriter $ updateShips dt grid player
-      endoActions           = executeAction <$> actions
-      composedActions       = mconcat endoActions
-  in appEndo composedActions . updateProjectiles dt . updateCash $ nextPlayer
-  where
-    updateCash :: (HasCash s, HasBases s) => s -> s
-    updateCash s =
-      let incomeDt =
-            let incomePerSecond = sum $ view income <$> s ^. bases
-            in round $ fromIntegral incomePerSecond / dt
-      in s & cash +~ incomeDt
-    executeAction :: GameAction -> Endo PlayerState
-    executeAction (ShotTarget a b) =
-      Endo $ let shotPosition   = a ^. position
-                 targetPosition = b ^. position
-                 projCarac      = a ^. projectileCaracteristics
-                 projMaxV       = projCarac ^. maxVelocity
-                 dir            = (normalize (direction shotPosition targetPosition) * projMaxV)
-                 phi              = directionAngle dir 0
-                 newProj        = Projectile projCarac (a ^. team) shotPosition dir phi
-             in projectiles %~ (:) newProj
-
-updateShips :: (GameActionWriter m,
-                HasShips s)
-            => DeltaTime
-            -> Grid Entity
-            -> s
-            -> m s
-updateShips dt grid st =
-  (st &) . (ships .~) <$> traverse (fmap (updatePosition dt) <$> updateShipObjective dt grid) (st ^. ships)
-
-updateProjectiles :: (HasProjectiles s) => DeltaTime -> s -> s
-updateProjectiles dt = projectiles %~ fmap (updatePosition dt)
+             -> Entity
+             -> m Entity
+updateEntity dt grid (EntityShip s)    = EntityShip . updatePosition dt <$> updateShipObjective dt grid s
+updateEntity dt _ (EntityProjectile p) = pure $ EntityProjectile $ updatePosition dt p
+updateEntity _ _ e                     = pure e
 
 updatePosition :: (HasPosition s, HasVelocity s) => DeltaTime -> s -> s
-updatePosition dt entity =
-  let v = entity ^. velocity
-  in entity & position +~ v ^* dt
+updatePosition dt entity = entity & position +~ (entity ^. velocity) ^* dt
 
 updateVelocity :: (HasPosition s, HasVelocity s, HasAngle s) => Velocity -> s -> s
 updateVelocity v = (velocity .~ v) . (angle %~ directionAngle v)
@@ -171,19 +178,28 @@ updateShipObjective :: GameActionWriter m
                     -> Grid Entity
                     -> Ship
                     -> m Ship
-updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
-  case nearestEnemy (s ^. rangeType) of
+updateShipObjective dt grid s =
+  let resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
+      reduceFireCooldown = fireCooldown -~ dt
+      resetVelocity      = velocity .~ V2 0 0
+      fireEnemy e        =
+        let pos         = s ^. position
+            enemyPos    = e ^. position
+            updateAngle = angle %~ directionAngle (direction pos enemyPos)
+        in updateAngle . resetFireCooldown . resetVelocity
+      shipEntity = EntityShip s
+  in
+    case nearestEnemy grid shipEntity (s ^. rangeType) of
        Just (EntityShip enemy) ->
-         if s ^. fireCooldown <= 0
-         then do
-           tell [ShotTarget s enemy]
-           pure $ fireEnemy enemy
-         else
-           pure $ s & reduceFireCooldown . resetVelocity
+         bool (s ^. fireCooldown <= 0)
+           (do
+               tell [ShotTarget s enemy]
+               pure $ s & fireEnemy enemy)
+           (pure $ s & reduceFireCooldown . resetVelocity)
        Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire aswell ?
        Just (EntityProjectile enemyProjectile) -> pure s -- TODO: nothing
        Nothing ->
-         case nearestEnemy InfiniteRange of
+         case nearestEnemy grid shipEntity InfiniteRange of
            Just (EntityShip enemy) ->
              let pos      = s     ^. position
                  maxV     = s     ^. maxVelocity
@@ -193,23 +209,3 @@ updateShipObjective dt grid s@(Ship _ t _ _ _ _ _) =
            Just (EntityBase enemyBase)             -> pure $ s & resetVelocity -- TODO: fire
            Just (EntityProjectile enemyProjectile) -> pure $ s & resetVelocity -- TODO: nothing
            Nothing                                 -> pure $ s & resetVelocity -- TODO: should be the end of the game
-  where
-    resetFireCooldown  = fireCooldown .~ (1 / s ^. fireRate)
-    reduceFireCooldown = fireCooldown -~ dt
-    resetVelocity      = velocity .~ V2 0 0
-    fireEnemy e        =
-      let pos         = s ^. position
-          enemyPos    = e ^. position
-          d           = direction pos enemyPos
-          phi           = directionAngle d
-          updateAngle = angle %~ phi
-      in s & updateAngle . resetFireCooldown . resetVelocity
-    enemiesInRange :: RangeType -> PQ.MinPQueue Distance Entity
-    enemiesInRange r =
-      let inRange                  = computeRange grid (EntityShip s) r
-          shipsOnly (EntityShip _) = True
-          shipsOnly _              = False
-          enemyShipsOnly           = liftA2 (&&) shipsOnly (enemyTeamOf t)
-      in inRange enemyShipsOnly
-    nearestEnemy :: RangeType -> Maybe Entity
-    nearestEnemy = fmap snd . PQ.getMin . enemiesInRange

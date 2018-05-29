@@ -31,9 +31,9 @@ module PureSpace.Common.Game.Base
   )
 where
 
+import           PureSpace.Common.Game.Fleet (Fleet, HasFleet (..))
 import           PureSpace.Common.Game.Types
 import           PureSpace.Common.Lens       (Lens', lens)
-import           PureSpace.Common.Game.Fleet (Fleet, HasFleet(..))
 
 -- | An amount of cash received regularly
 type Income        = Integer
@@ -41,11 +41,15 @@ type Income        = Integer
 -- a player has lost.
 type IsHeadquarter = Bool
 
-
 -- | Base of a player, providers of income and potentially
 -- main target of an opponent
-data Base     = Base BaseType Team Income Health Position Angle Fleet deriving (Eq, Ord, Show)
-data BaseType = BaseType MaxHealth IsHeadquarter Width Height   deriving (Eq, Ord, Show)
+data Base =
+  Base BaseType Team Income Health Position Angle Fleet ObjectId PlayerId
+  deriving (Eq, Ord, Show)
+
+data BaseType =
+  BaseType MaxHealth IsHeadquarter Width Height
+  deriving (Eq, Ord, Show)
 
 class HasBase b where
   base :: Lens' b Base
@@ -64,44 +68,56 @@ instance HasBase Base where
 
 instance HasBaseType Base where
  baseType =
-    let f (Base a _ _ _ _ _ _)   = a
-        g (Base _ b c d e k l) a = Base a b c d e k l
+    let f (Base a _ _ _ _ _ _ _ _)   = a
+        g (Base _ b c d e k l m o) a = Base a b c d e k l m o
     in lens f g
 
 instance HasTeam Base where
   team =
-    let f (Base _ b _ _ _ _ _)   = b
-        g (Base a _ c d e k l) b = Base a b c d e k l
+    let f (Base _ b _ _ _ _ _ _ _)   = b
+        g (Base a _ c d e k l m o) b = Base a b c d e k l m o
     in lens f g
 
 instance HasIncome Base where
   income =
-    let f (Base _ _ c _ _ _ _)   = c
-        g (Base a b _ d e k l) c = Base a b c d e k l
+    let f (Base _ _ c _ _ _ _ _ _)   = c
+        g (Base a b _ d e k l m o) c = Base a b c d e k l m o
     in lens f g
 
 instance HasHealth Base where
   health =
-    let f (Base _ _ _ d _ _ _)   = d
-        g (Base a b c _ e k l) d = Base a b c d e k l
+    let f (Base _ _ _ d _ _ _ _ _)   = d
+        g (Base a b c _ e k l m o) d = Base a b c d e k l m o
     in lens f g
 
 instance HasPosition Base where
   position =
-    let f (Base _ _ _ _ e _ _)   = e
-        g (Base a b c d _ k l) e = Base a b c d e k l
+    let f (Base _ _ _ _ e _ _ _ _)   = e
+        g (Base a b c d _ k l m o) e = Base a b c d e k l m o
     in lens f g
 
 instance HasAngle Base where
   angle =
-    let f (Base _ _ _ _ _ k _)   = k
-        g (Base a b c d e _ l) k = Base a b c d e k l
+    let f (Base _ _ _ _ _ k _ _ _)   = k
+        g (Base a b c d e _ l m o) k = Base a b c d e k l m o
     in lens f g
 
 instance HasFleet Base where
   fleet =
-    let f (Base _ _ _ _ _ _ l)   = l
-        g (Base a b c d e k _) l = Base a b c d e k l
+    let f (Base _ _ _ _ _ _ l _ _)   = l
+        g (Base a b c d e k _ m o) l = Base a b c d e k l m o
+    in lens f g
+
+instance HasObjectId Base where
+  objectId =
+    let f (Base _ _ _ _ _ _ _ m _)   = m
+        g (Base a b c d e k l _ o) m = Base a b c d e k l m o
+    in lens f g
+
+instance HasPlayerId Base where
+  playerId =
+    let f (Base _ _ _ _ _ _ _ _ o)   = o
+        g (Base a b c d e k l m _) o = Base a b c d e k l m o
     in lens f g
 
 instance HasMaxHealth Base where

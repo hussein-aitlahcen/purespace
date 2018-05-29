@@ -34,6 +34,8 @@ module PureSpace.Common.Game.Geometry
 import           Linear                      hiding (angle, identity)
 import           PureSpace.Common.Game.Types
 
+-- TODO: extract common behavior in a 'Shape' typeclass
+
 -- top left, bot right
 type Rectangle = (Position, Position)
 
