@@ -70,6 +70,7 @@ library
                      , stm
                      , vector
                      , pqueue
+                     , free
 
 executable purespace-client
   main-is:             Main.hs
