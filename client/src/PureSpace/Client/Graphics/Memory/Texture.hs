@@ -43,6 +43,7 @@ import Graphics.UI.GLUT
   , textureWrapMode
   )
 import PureSpace.Client.Graphics.Error
+import PureSpace.Common.Prelude
 import PureSpace.Common.Lens (MonadError, MonadIO, liftIO, throwing)
 
 data SpriteTexture =
@@ -54,13 +55,13 @@ createTexture ::
      (MonadIO m, MonadError e m, AsResourceError e, AsGraphicsError e)
   => FilePath
   -> m SpriteTexture
-createTexture image = do
-  img <- liftIO $ readImage image
+createTexture imagePath = do
+  img <- liftIO $ readImage imagePath
   case img of
     (Right (ImageRGBA8 (Image w h pixels))) ->
       pure (SpriteTexture w h) <*> go w h pixels
-    (Left _) -> throwing resourceFileNotFound image
-    _ -> throwing graphicsTextureError image
+    (Left s) -> liftIO (putStrLn $ "Failed to create texture: " <> s) *> throwing resourceFileNotFound imagePath
+    _ -> throwing graphicsTextureError imagePath
   where
     go h w pixels = do
       text <- genObjectName

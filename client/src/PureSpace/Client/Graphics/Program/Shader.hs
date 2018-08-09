@@ -17,7 +17,7 @@ module PureSpace.Client.Graphics.Program.Shader
   ( module PureSpace.Common.Resource
   , module PureSpace.Client.Graphics.Program.Shader.Error
   , module PureSpace.Client.Graphics.Program.Shader.State
-  , shadersPath
+  , shaders
   , loadGameShaders
   ) where
 
@@ -33,6 +33,7 @@ import Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects
   , shaderInfoLog
   , shaderSourceBS
   )
+import Paths_purespace
 import PureSpace.Client.Graphics.Program.Shader.Error
 import PureSpace.Client.Graphics.Program.Shader.State
 import PureSpace.Common.Lens
@@ -47,7 +48,14 @@ import PureSpace.Common.Prelude
 import PureSpace.Common.Resource
 
 shadersPath :: String
-shadersPath = "./shaders"
+shadersPath = "shaders"
+
+shaders :: MonadIO m => m [(ShaderType, FilePath)]
+shaders =
+  liftIO $
+  traverse
+    (bitraverse pure (getDataFileName . (shadersPath ++)))
+    [(VertexShader, "/sprite.vert"), (FragmentShader, "/sprite.frag")]
 
 createAndCompileShader ::
      (MonadIO m, MonadError e m, AsShaderError e)

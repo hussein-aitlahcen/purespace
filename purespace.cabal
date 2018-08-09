@@ -28,13 +28,18 @@ category:            Game
 build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
+data-files:          ./shaders/sprite.frag
+                   , ./shaders/sprite.vert
+                   , ./assets/Spritesheet/sheet.json
+                   , ./assets/Spritesheet/sheet.png
 
 source-repository head
     type: git
     location: https://github.com/hussein-aitlahcen/purespace
 
 library
-  exposed-modules:     PureSpace.Common.Prelude
+  exposed-modules:     Paths_purespace
+                     , PureSpace.Common.Prelude
                      , PureSpace.Common.Monad
                      , PureSpace.Common.Concurrent
                      , PureSpace.Common.Lens
@@ -74,7 +79,8 @@ library
 
 executable purespace-client
   main-is:             Main.hs
-  other-modules:       PureSpace.Client
+  other-modules:       Paths_purespace
+                     , PureSpace.Client
                      , PureSpace.Client.Error
                      , PureSpace.Client.State
                      , PureSpace.Client.Config

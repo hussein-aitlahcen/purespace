@@ -75,10 +75,9 @@ createGameWindow ::
   => m ()
 createGameWindow = do
   initialContextVersion $= openGLVersion
-  atlas <- loadAssetJSON ("sprite_atlas", spriteSheetPath)
   (_, _) <- getArgsAndInitialize
   _ <- createWindow "PureSpace"
-  (program, sprites) <- initContext atlas
+  (program, sprites) <- initContext
   gameConf <- view gameConfig
   gameRef <- liftIO $ newIORef (game gameConf)
   displayCallback $= debugDisplay gameConf gameRef program sprites
@@ -139,6 +138,7 @@ initContext ::
      ( MonadIO m
      , MonadState s m
      , MonadError e m
+     , AsAssetError e
      , AsResourceError e
      , HasShaderState s
      , HasShaderProgramState s
@@ -146,26 +146,23 @@ initContext ::
      , AsShaderError e
      , AsShaderProgramError e
      )
-  => SpriteAtlas
-  -> m (Program, SpritesByName)
-initContext (SpriteAtlas image sprites) = do
-  liftIO $ putStrLn "initialize"
-  program <-
-    loadGameShaderProgram
-      [ (VertexShader, shadersPath <> "/sprite.vert")
-      , (FragmentShader, shadersPath <> "/sprite.frag")
-      ]
+  => m (Program, SpritesByName)
+initContext = do
+  liftIO $ putStrLn "Initialize graphics context"
+  -- OpenGL
   initialDisplayMode $= [DoubleBuffered]
   blend $= Enabled
   blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
-  (SpriteTexture textW textH text) <- createTexture image
-  let vertices = initVertices textW textH =<< sprites
-  buffer <- liftIO $ makeBuffer ArrayBuffer vertices
+  -- shaders/textures
+  program <- loadGameShaderProgram =<< shaders
+  (SpriteTexture textW textH text) <- createTexture =<< spritesAtlasPath
+  (SpriteAtlas sprites) <- loadSpritesAtlasDefinition
+  buffer <-
+    liftIO $ makeBuffer ArrayBuffer (initVertices textW textH =<< sprites)
   graphicsSprites <-
     traverse (uncurry (createGraphicsSprite buffer)) (enumerate sprites)
   textureBinding Texture2D $= Just text
-  let spriteMap = buildSpriteMap graphicsSprites
-  pure (program, spriteMap)
+  pure (program, buildSpriteMap graphicsSprites)
 
 initVertices :: Int -> Int -> Sprite -> [GLfloat]
 initVertices textW textH (Sprite _ x y w h) = spriteVertices x y w h textW textH

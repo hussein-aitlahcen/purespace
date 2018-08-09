@@ -1,4 +1,4 @@
-<TextureAtlas imagePath="sheet.png">
+<TextureAtlas>
 	<SubTexture name="beam0.png" x="143" y="377" width="43" height="31"/>
 	<SubTexture name="beam1.png" x="327" y="644" width="40" height="20"/>
 	<SubTexture name="beam2.png" x="262" y="907" width="38" height="31"/>

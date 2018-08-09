@@ -14,6 +14,7 @@
 module PureSpace.Common.Prelude
   ( module Data.Semigroup
   , module Data.Bifunctor
+  , module Data.Bitraversable
   , module Data.Maybe
   , module Data.Int
   , safeHead
@@ -25,6 +26,7 @@ module PureSpace.Common.Prelude
   ) where
 
 import Data.Bifunctor
+import Data.Bitraversable
 import Data.Foldable (foldrM, traverse_)
 import Data.Int
 import Data.Maybe

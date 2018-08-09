@@ -1,5 +1,4 @@
 {
-    "atlas": "sheet.png",
     "sprites": [{
             "name": "beam0.png",
             "x": "143",

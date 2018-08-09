@@ -19,30 +19,31 @@ module PureSpace.Client.Graphics.Assets
   , module PureSpace.Common.Resource
   , Sprite(..)
   , SpriteAtlas(..)
-  , assetsPath
-  , spritesPath
-  , spriteSheetPath
+  , spritesAtlasPath
+  , spritesAtlasDefinitionPath
+  , loadSpritesAtlasDefinition
   , loadAssetJSON
   ) where
 
 import Data.Aeson (FromJSON, (.:), eitherDecode, parseJSON, withObject)
 import qualified Data.ByteString.Lazy as BS
+import Paths_purespace
 import PureSpace.Client.Graphics.Assets.Error
 import PureSpace.Common.Lens (MonadError, MonadIO, throwing)
+import PureSpace.Common.Monad
 import PureSpace.Common.Prelude
 import PureSpace.Common.Resource
 
 data Sprite =
-  Sprite String
-         Int
-         Int
-         Int
-         Int
+  Sprite String -- name
+         Int -- x
+         Int -- y
+         Int -- width
+         Int -- height
   deriving (Show)
 
-data SpriteAtlas =
-  SpriteAtlas String
-              [Sprite]
+newtype SpriteAtlas =
+  SpriteAtlas [Sprite]
   deriving (Show)
 
 instance FromJSON Sprite where
@@ -55,20 +56,19 @@ instance FromJSON Sprite where
 
 -- TODO: make literal numbers please
 instance FromJSON SpriteAtlas where
-  parseJSON =
-    withObject "sprite-atlas" $ \v ->
-      pure SpriteAtlas <*> (preprendPath <$> v .: "atlas") <*> v .: "sprites"
-    where
-      preprendPath = ((spritesPath <> "/") <>)
+  parseJSON = withObject "sprite-atlas" $ \v -> SpriteAtlas <$> v .: "sprites"
 
-assetsPath :: String
-assetsPath = "./assets"
+assetsDirectory :: String
+assetsDirectory = "assets"
 
-spriteSheetPath :: FilePath
-spriteSheetPath = spritesPath <> "/sheet.json"
+spritesDirectory :: String
+spritesDirectory = assetsDirectory <> "/Spritesheet"
 
-spritesPath :: String
-spritesPath = assetsPath <> "/Spritesheet"
+spritesAtlasDefinitionPath :: MonadIO m => m FilePath
+spritesAtlasDefinitionPath = liftIO $ getDataFileName $ spritesDirectory <> "/sheet.json"
+
+spritesAtlasPath :: MonadIO m => m FilePath
+spritesAtlasPath = liftIO $ getDataFileName $ spritesDirectory <> "/sheet.png"
 
 loadAssetJSON ::
      (MonadIO m, MonadError e m, AsResourceError e, AsAssetError e, FromJSON a)
@@ -79,3 +79,9 @@ loadAssetJSON entry@(_, path) = do
   case eitherDecode content of
     Right asset -> pure asset
     Left message -> throwing assetDecodingFailure (entry, message)
+
+loadSpritesAtlasDefinition ::
+     (MonadIO m, MonadError e m, AsResourceError e, AsAssetError e)
+  => m SpriteAtlas
+loadSpritesAtlasDefinition =
+  loadAssetJSON =<< pure (,) <*> pure "Sprite Atlas" <*> spritesAtlasDefinitionPath
