@@ -25,6 +25,7 @@ import PureSpace.Client.State
 import PureSpace.Common.Concurrent
 import PureSpace.Common.Game.Logic.Loop
 import PureSpace.Common.Lens
+import PureSpace.Common.Prelude
 import System.Clock
 
 runGraphics :: IO ()
@@ -49,13 +50,13 @@ runLogic = do
 forkLoop :: IO () -> IO (MVar ())
 forkLoop thread = do
   handle <- newEmptyMVar
-  _ <- forkFinally thread (\_ -> putMVar handle ())
+  _ <- forkFinally thread (const $ putMVar handle ())
   return handle
 
 runClient :: IO ()
 runClient = do
   graphicThread <- forkLoop $ void runGraphics
-  logicThread <- forkLoop runLogic
+  _ <- forkLoop runLogic
   -- Waiting for all threads to finish
-  mapM_ takeMVar [graphicThread, logicThread]
+  traverse_ takeMVar [graphicThread]
   putStrLn "Finished"
