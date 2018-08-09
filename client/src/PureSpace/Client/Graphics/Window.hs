@@ -147,22 +147,27 @@ initContext ::
      , AsShaderProgramError e
      )
   => m (Program, SpritesByName)
-initContext = do
-  liftIO $ putStrLn "Initialize graphics context"
-  -- OpenGL
-  initialDisplayMode $= [DoubleBuffered]
-  blend $= Enabled
-  blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
-  -- shaders/textures
-  program <- loadGameShaderProgram =<< shaders
-  (SpriteTexture textW textH text) <- createTexture =<< spritesAtlasPath
-  (SpriteAtlas sprites) <- loadSpritesAtlasDefinition
-  buffer <-
-    liftIO $ makeBuffer ArrayBuffer (initVertices textW textH =<< sprites)
-  graphicsSprites <-
-    traverse (uncurry (createGraphicsSprite buffer)) (enumerate sprites)
-  textureBinding Texture2D $= Just text
-  pure (program, buildSpriteMap graphicsSprites)
+initContext =
+  let glContext = do
+        initialDisplayMode $= [DoubleBuffered]
+        blend $= Enabled
+        blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
+      graphicsContext =
+        let shaderContext = loadGameShaderProgram =<< shaders
+            textureContext = do
+              (SpriteTexture textW textH text) <-
+                createTexture =<< spritesAtlasPath
+              (SpriteAtlas sprites) <- loadSpritesAtlasDefinition
+              buffer <-
+                liftIO $
+                makeBuffer ArrayBuffer (initVertices textW textH =<< sprites)
+              textureBinding Texture2D $= Just text
+              buildSpriteMap <$>
+                traverse
+                  (uncurry (createGraphicsSprite buffer))
+                  (enumerate sprites)
+         in pure (,) <*> shaderContext <*> textureContext
+   in glContext *> graphicsContext
 
 initVertices :: Int -> Int -> Sprite -> [GLfloat]
 initVertices textW textH (Sprite _ x y w h) = spriteVertices x y w h textW textH
@@ -177,8 +182,8 @@ createGraphicsSprite ::
 createGraphicsSprite buffer i sprite =
   pure GraphicsSprite <*> pure sprite <*> spriteVAO buffer i
 
-vaoByName :: SpritesByName -> SpriteName -> Maybe VertexArrayObject
-vaoByName sprites name =
+spriteByName :: SpritesByName -> SpriteName -> Maybe VertexArrayObject
+spriteByName sprites name =
   let vao (GraphicsSprite _ v) = v
    in fmap vao $ name `M.lookup` sprites
 
@@ -202,8 +207,8 @@ debugDisplay config gameStateRef program sprites = do
   game <- liftIO $ readIORef gameStateRef
   let elapsedSeconds = 1 / fromIntegral fps -- totally fake so what ?
       nextGame = execState (runReaderT (updateGame elapsedSeconds) config) game
-      (Just shipVAO) = sprites `vaoByName` "playerShip1_blue.png"
-      (Just projVAO) = sprites `vaoByName` "laserBlue05.png"
+      (Just shipVAO) = sprites `spriteByName` "playerShip1_blue.png"
+      (Just projVAO) = sprites `spriteByName` "laserBlue05.png"
       display ::
            (HasPosition s, HasVelocity s, HasAngle s)
         => VertexArrayObject
