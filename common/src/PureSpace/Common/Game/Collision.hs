@@ -31,6 +31,7 @@ module PureSpace.Common.Game.Collision
   ) where
 
 import Data.Bits ((.&.), (.|.), shiftL)
+import Data.Functor.Foldable
 import qualified Data.IntMap.Strict as M
 import qualified Data.PQueue.Prio.Min as PQ
 import qualified Data.Set as S

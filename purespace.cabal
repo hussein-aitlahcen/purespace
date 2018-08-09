@@ -76,6 +76,7 @@ library
                      , vector
                      , pqueue
                      , free
+                     , recursion-schemes
 
 executable purespace-client
   main-is:             Main.hs
