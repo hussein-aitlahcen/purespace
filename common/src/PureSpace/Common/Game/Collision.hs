@@ -31,7 +31,6 @@ module PureSpace.Common.Game.Collision
   ) where
 
 import Data.Bits ((.&.), (.|.), shiftL)
-import Data.Functor.Foldable
 import qualified Data.IntMap.Strict as M
 import qualified Data.PQueue.Prio.Min as PQ
 import qualified Data.Set as S
@@ -117,25 +116,30 @@ createSpatialGrid gs gd@(V2 gdw gdh) units =
    in Grid gs gd bs buckets
 
 computeCollisions ::
-     (HasPosition s, HasWidth s, HasHeight s, HasPosition a, Ord s)
+     (HasPosition s, HasWidth s, HasHeight s, Ord s)
   => Grid s
-  -> a
-  -> S.Set s
-computeCollisions (Grid _ _ _ buckets) x = undefined
-  -- let step (Bucket _ objs) acc =
-  --       let go 0 = acc
-  --           go 1 = acc
-  --           go l = S.union acc $ S.fromList (catMaybes [bool
-  --                                                        (overlaps (unitBounds a) (unitBounds b))
-  --                                                        (Just (a, b))
-  --                                                        Nothing
-  --                                                      | j <- [0..l-2]
-  --                                                      , k <- [j+1..l-1]
-  --                                                      , let a = objs V.! j
-  --                                                      , let b = objs V.! k])
-  --       in go $ V.length objs
-  -- in M.foldr' step S.empty buckets
+  -> S.Set (Collision s)
+computeCollisions (Grid _ _ _ buckets) =
+  let step (Bucket _ objs) acc =
+        let go 0 = acc
+            go 1 = acc
+            go l =
+              S.union acc $
+              S.fromList
+                (catMaybes
+                   [ bool
+                     (overlaps (unitBounds a) (unitBounds b))
+                     (Just (a, b))
+                     Nothing
+                   | j <- [0 .. l - 2]
+                   , k <- [j + 1 .. l - 1]
+                   , let a = objs V.! j
+                   , let b = objs V.! k
+                   ])
+         in go $ V.length objs
+   in M.foldr' step S.empty buckets
 
+-- TODO: please factor out theses methods
 computeRange ::
      (HasPosition a, HasPosition s)
   => Grid s

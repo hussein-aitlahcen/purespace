@@ -26,6 +26,7 @@ module PureSpace.Common.Game.Types
   , Direction
   , FireRate
   , FireCooldown
+  , RespawnCooldown
   , Damage
   , Health
   , MaxHealth
@@ -40,6 +41,7 @@ module PureSpace.Common.Game.Types
   , HasFireRate(..)
   , HasRangeType(..)
   , HasFireCooldown(..)
+  , HasRespawnCooldown(..)
   , HasDamage(..)
   , HasHealth(..)
   , HasMaxHealth(..)
@@ -76,6 +78,8 @@ type Direction = V2 Float
 type FireRate = Float
 
 type FireCooldown = Float
+
+type RespawnCooldown = Float
 
 type Damage = Float
 
@@ -123,6 +127,9 @@ class HasFireRate s where
 
 class HasFireCooldown s where
   fireCooldown :: Lens' s FireCooldown
+
+class HasRespawnCooldown s where
+  respawnCooldown :: Lens' s RespawnCooldown
 
 class HasRangeType s where
   rangeType :: Lens' s RangeType

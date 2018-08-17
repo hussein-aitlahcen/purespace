@@ -37,12 +37,21 @@ import PureSpace.Common.Lens
 import PureSpace.Common.Prelude
 
 {-
+  TODO: game input actions, whenever a client send a command,
+        it should be processed in a game turn
   TODO: game config (map width etc...)
   TODO: step units
   TODO: collision check
   TODO: AI trajectory
   -- TODO: for each ship, if any enemy is in range, stop moving and shot at him
   -- TODO: otherwise, move to the nearest enemy base
+
+
+Game state:
+
+1. update players
+2. update entities
+final. update spatial grid
 -}
 type GameActionWriter m = MonadWriter [GameAction] m
 
@@ -131,34 +140,53 @@ updateEntities ::
   => DeltaTime
   -> m ()
 updateEntities dt = do
-  grid <- use spatialGrid
-  e <- use entities
-  let (actions, entities') = traverse (updateEntity dt grid) e
+  (entities', actions) <-
+    runWriterT $ traverse (updateEntity dt) =<< use entities
   entities'' <- foldrM executeGameAction entities' actions
   entities .= entities''
 
 executeGameAction ::
      (MonadState s m, HasNextObjectId s) => GameAction -> [Entity] -> m [Entity]
 executeGameAction (ShotTarget a b) e = do
-  nextId <- use nextObjectId
-  let shotPosition = a ^. position
-      targetPosition = b ^. position
-      projCarac = a ^. projectileCaracteristics
-      projMaxV = projCarac ^. maxVelocity
-      dir = normalize (direction shotPosition targetPosition) * projMaxV
+  nid <- use nextObjectId
+  let pid = a ^. playerId
+      origin = a ^. position
+      target = b ^. position
+      caracteristics = a ^. projectileCaracteristics
+      mv = caracteristics ^. maxVelocity
+      dir = normalize (direction origin target) * mv
       phi = directionAngle dir 0
       newProj =
         EntityProjectile $
-        Projectile projCarac (a ^. team) shotPosition dir phi nextId 0
+        Projectile caracteristics (a ^. team) origin dir phi nid pid
   pure $ newProj : e
+executeGameAction (SpawnFleet a b) e = do
+  nid <- use nextObjectId
+  let sc = b ^. shipCaracteristics
+      pid = a ^. playerId
+      pt = a ^. team
+      origin = a ^. position
+      newShip = EntityShip $ Ship sc pt 100 0 origin (V2 0 0) 0 nid pid
+  pure $ newShip : e
+executeGameAction NoOperation e = pure e
 
 updateEntity ::
-     GameActionWriter m => DeltaTime -> Grid Entity -> Entity -> m Entity
-updateEntity dt grid (EntityShip s) =
+     ( GameActionWriter m
+     , MonadState s m
+     , HasEntities s
+     , HasNextObjectId s
+     , HasSpatialGrid s
+     )
+  => DeltaTime
+  -> Entity
+  -> m Entity
+updateEntity dt (EntityShip s) = do
+  grid <- use spatialGrid
   EntityShip . updatePosition dt <$> updateShipObjective dt grid s
-updateEntity dt _ (EntityProjectile p) =
+updateEntity dt (EntityProjectile p) =
   pure $ EntityProjectile $ updatePosition dt p
-updateEntity _ _ e = pure e
+-- TODO: update base by spawning new fleet if required
+updateEntity dt (EntityBase b) = EntityBase <$> updateBase dt b
 
 updatePosition :: (HasPosition s, HasVelocity s) => DeltaTime -> s -> s
 updatePosition dt entity = entity & position +~ (entity ^. velocity) ^* dt
@@ -179,23 +207,52 @@ updateShipObjective dt grid s =
             updateAngle = angle %~ directionAngle (direction pos enemyPos)
          in updateAngle . resetFireCooldown . resetVelocity
       shipEntity = EntityShip s
-   in case nearestEnemy grid shipEntity (s ^. rangeType) of
+   in case nearestEnemy grid shipEntity (s ^. rangeType)
+        -- Any enemy to shot ?
+            of
         Just (EntityShip enemy) ->
           bool
             (s ^. fireCooldown <= 0)
             (do tell [ShotTarget s enemy]
                 pure $ s & fireEnemy enemy)
             (pure $ s & reduceFireCooldown . resetVelocity)
-        Just (EntityBase enemyBase) -> pure $ s & resetVelocity -- TODO: fire aswell ?
-        Just (EntityProjectile enemyProjectile) -> pure s -- TODO: nothing
-        Nothing ->
+        Just (EntityBase enemyBase)
+         -- TODO: fire aswell ?
+         -> pure $ s & reduceFireCooldown . resetVelocity
+        Just (EntityProjectile enemyProjectile)
+         -- TODO: nothing yet
+         -> pure s
+        Nothing
+        -- Rush to nearest enemy
+         ->
           case nearestEnemy grid shipEntity InfiniteRange of
             Just (EntityShip enemy) ->
               let pos = s ^. position
                   maxV = s ^. maxVelocity
                   enemyPos = enemy ^. position
                   v = normalize (direction pos enemyPos) * maxV
-               in pure $ updateVelocity v s
-            Just (EntityBase enemyBase) -> pure $ s & resetVelocity -- TODO: fire
-            Just (EntityProjectile enemyProjectile) -> pure $ s & resetVelocity -- TODO: nothing
-            Nothing -> pure $ s & resetVelocity -- TODO: should be the end of the game
+               in pure $ updateVelocity v s & reduceFireCooldown
+            Just (EntityBase enemyBase)
+             -- TODO: fire
+             -> pure $ s & reduceFireCooldown . resetVelocity
+            Just (EntityProjectile enemyProjectile)
+             -- TODO: nothing
+             -> pure $ s & reduceFireCooldown . resetVelocity
+            Nothing
+             -- TODO: should be the end of the game
+             -> pure $ s & reduceFireCooldown . resetVelocity
+
+-- TODO: drasically improve this, please
+updateBase :: GameActionWriter m => DeltaTime -> Base -> m Base
+updateBase dt b =
+  let canRespawnFleet = b ^. respawnCooldown <= 0
+      reduceSpawnCooldown = respawnCooldown -~ dt
+      -- TODO: extract that cooldown into the type Base
+      resetSpawnCooldown = respawnCooldown .~ 1
+   in if canRespawnFleet
+        then do
+          let fleets =
+                (^. fleetCompositions) =<< b ^. fleet . fleetCaracteristics
+          tell $ SpawnFleet b <$> fleets
+          pure $ b & resetSpawnCooldown
+        else pure $ b & reduceSpawnCooldown

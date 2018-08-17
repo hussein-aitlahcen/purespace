@@ -21,13 +21,25 @@ import PureSpace.Common.Game.Player.State
 
 data GameAction where
   ShotTarget
-    :: ( HasPosition p
-       , HasTeam p
-       , HasFireRate p
-       , HasFireCooldown p
-       , HasProjectileCaracteristics p
-       , HasPosition t
+    :: ( HasPosition t
+       , HasTeam t
+       , HasPlayerId t
+       , HasFireRate t
+       , HasFireCooldown t
+       , HasProjectileCaracteristics t
+       , HasPosition u
        )
-    => p
-    -> t
+    => t
+    -> u
     -> GameAction
+  SpawnFleet
+    :: ( HasPosition t
+       , HasTeam t
+       , HasPlayerId t
+       , HasRespawnCooldown t
+       , HasShipCaracteristics u
+       )
+    => t
+    -> u
+    -> GameAction
+  NoOperation :: GameAction

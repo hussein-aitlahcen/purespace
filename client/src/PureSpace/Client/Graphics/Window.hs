@@ -88,8 +88,8 @@ createGameWindow = do
     game (GameConfig a b) =
       GameState
         (createSpatialGrid a b ships)
-        [PlayerState 0 One 0, PlayerState 0 Two 0]
-        ships
+        [PlayerState 0 One 0, PlayerState 1 Two 0]
+        (ships ++ bases)
         0
       where
         pc =
@@ -104,12 +104,37 @@ createGameWindow = do
             (CircleRange 500)
         ships =
           EntityShip <$>
-          [ Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0 0 0
-          , Ship sc One 100 0 (V2 0 500) (V2 0 0) 0 1 0
+          [ Ship sc One 100 0 (V2 0 2000) (V2 0 0) 0 0 0
+          , Ship sc One 100 0 (V2 0 1000) (V2 0 0) 0 1 0
           , Ship sc One 100 0 (V2 0 0) (V2 0 0) 0 2 0
-          , Ship sc Two 100 0 (V2 1000 1000) (V2 0 0) 0 3 1
-          , Ship sc Two 100 0 (V2 1000 500) (V2 0 0) 0 4 1
-          , Ship sc Two 100 0 (V2 1000 0) (V2 0 0) 0 5 1
+          , Ship sc Two 100 0 (V2 2000 2000) (V2 0 0) 0 3 1
+          , Ship sc Two 100 0 (V2 2000 1000) (V2 0 0) 0 4 1
+          , Ship sc Two 100 0 (V2 2000 0) (V2 0 0) 0 5 1
+          ]
+        bases =
+          EntityBase <$>
+          [ Base
+              (BaseCaracteristics 100 True 40 40)
+              One
+              0
+              100
+              (V2 0 1000)
+              0
+              (Fleet [FleetCaracteristics [FleetComposition sc 0] 1 0])
+              6
+              0
+              0
+          , Base
+              (BaseCaracteristics 100 True 40 40)
+              Two
+              0
+              100
+              (V2 2000 1000)
+              0
+              (Fleet [FleetCaracteristics [FleetComposition sc 0] 1 0])
+              6
+              1
+              0
           ]
 
 loadInputState :: (MonadIO m, MonadState s m, HasDeviceState s) => m ()
@@ -205,27 +230,35 @@ debugDisplay config gameStateRef program sprites = do
   clear [ColorBuffer, DepthBuffer]
   currentProgram $= Just program
   game <- liftIO $ readIORef gameStateRef
-  let elapsedSeconds = 1 / fromIntegral fps -- totally fake so what ?
+  -- TODO: totally fake so what ?
+  let elapsedSeconds = 1 / fromIntegral fps
       nextGame = execState (runReaderT (updateGame elapsedSeconds) config) game
+      -- TODO: not total fucker
       (Just shipVAO) = sprites `spriteByName` "playerShip1_blue.png"
       (Just projVAO) = sprites `spriteByName` "laserBlue05.png"
+      (Just baseVAOBlue) = sprites `spriteByName` "ufoBlue.png"
+      (Just baseVAORed) = sprites `spriteByName` "ufoRed.png"
       display ::
-           (HasPosition s, HasVelocity s, HasAngle s)
+           (HasPosition s, HasAngle s)
         => VertexArrayObject
         -> s
         -> DisplayCallback
       display = displaySprite config program (fromIntegral w) (fromIntegral h)
       displayEntity (EntityShip s) = display shipVAO s
       displayEntity (EntityProjectile p) = display projVAO p
-      -- TODO: add base vao
-      displayEntity _ = putStrLn "bases not drawable yet"
+      displayEntity (EntityBase b) =
+        let spVAO =
+              case b ^. team of
+                One -> baseVAOBlue
+                Two -> baseVAORed
+         in display spVAO b
   writeIORef gameStateRef nextGame
   traverse_ displayEntity $ eliminateSpatialGrid (nextGame ^. spatialGrid)
   currentProgram $= Nothing
   swapBuffers
 
 displaySprite ::
-     (HasGameConfig a, HasGridSize a, HasPosition s, HasVelocity s, HasAngle s)
+     (HasGameConfig a, HasGridSize a, HasPosition s, HasAngle s)
   => a
   -> Program
   -> Float

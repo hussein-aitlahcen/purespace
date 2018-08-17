@@ -12,15 +12,16 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 module PureSpace.Common.Game.Fleet
-  ( Fleet(..)
+  ( module PureSpace.Common.Game.Types
+  , Fleet(..)
   , FleetCaracteristics(..)
   , FleetComposition(..)
   , ShipAmount
-  , RespawnCooldown
   , Cost
   , HasFleet(..)
   , HasCost(..)
   , HasFleetCaracteristics(..)
+  , HasFleetCompositions(..)
   , HasRespawnCooldown(..)
   , HasShipAmount(..)
   ) where
@@ -30,11 +31,10 @@ import PureSpace.Common.Game.Ship
   ( HasShipCaracteristics(..)
   , ShipCaracteristics
   )
+import PureSpace.Common.Game.Types
 import PureSpace.Common.Lens (Lens', lens)
 
 type ShipAmount = Natural
-
-type RespawnCooldown = Natural
 
 type Cost = Natural
 
@@ -60,14 +60,14 @@ class HasFleet h where
 class HasCost c where
   cost :: Lens' c Cost
 
-class HasRespawnCooldown r where
-  respawnCooldown :: Lens' r RespawnCooldown
-
 class HasFleetCaracteristics f where
   fleetCaracteristics :: Lens' f [FleetCaracteristics]
 
 class HasShipAmount s where
   shipAmount :: Lens' s ShipAmount
+
+class HasFleetCompositions s where
+  fleetCompositions :: Lens' s [FleetComposition]
 
 instance HasFleet Fleet where
   fleet = id
@@ -88,6 +88,12 @@ instance HasFleetCaracteristics Fleet where
   fleetCaracteristics =
     let f (Fleet a) = a
         g _ = Fleet
+     in lens f g
+
+instance HasFleetCompositions FleetCaracteristics where
+  fleetCompositions =
+    let f (FleetCaracteristics a _ _) = a
+        g (FleetCaracteristics _ b c) a = FleetCaracteristics a b c
      in lens f g
 
 instance HasShipAmount FleetComposition where

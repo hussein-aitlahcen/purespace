@@ -31,7 +31,7 @@ data GameConfig =
   deriving (Show)
 
 defaultGameConfig :: GameConfig
-defaultGameConfig = GameConfig (V2 1000 1000) (V2 10 10)
+defaultGameConfig = GameConfig (V2 2000 2000) (V2 10 10)
 
 class HasGameConfig s where
   gameConfig :: Lens' s GameConfig
