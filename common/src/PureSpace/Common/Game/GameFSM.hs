@@ -82,7 +82,7 @@ enemyTeamOf :: HasTeam s => Team -> (s -> Bool)
 enemyTeamOf t = (/=) t . view team
 
 allyTeamOf :: HasTeam s => Team -> (s -> Bool)
-allyTeamOf t = (==) t . view team
+allyTeamOf t = not . enemyTeamOf t
 
 getBases :: (MonadState s m, HasEntities s) => m [Base]
 getBases =
