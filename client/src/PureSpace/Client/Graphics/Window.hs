@@ -118,23 +118,23 @@ createGameWindow = do
               One
               0
               100
-              (V2 0 1000)
+              (V2 0 345)
               0
-              (Fleet [FleetCaracteristics [FleetComposition sc 0] 1 0])
+              [Fleet (FleetCaracteristics [FleetComposition sc 0] 2.2 0) 0]
               6
               0
-              0
+              []
           , Base
               (BaseCaracteristics 100 True 40 40)
               Two
               0
               100
-              (V2 2000 1000)
+              (V2 2000 786)
               0
-              (Fleet [FleetCaracteristics [FleetComposition sc 0] 1 0])
+              [Fleet (FleetCaracteristics [FleetComposition sc 0] 4.2 0) 0]
               6
               1
-              0
+              []
           ]
 
 loadInputState :: (MonadIO m, MonadState s m, HasDeviceState s) => m ()
@@ -234,8 +234,10 @@ debugDisplay config gameStateRef program sprites = do
   let elapsedSeconds = 1 / fromIntegral fps
       nextGame = execState (runReaderT (updateGame elapsedSeconds) config) game
       -- TODO: not total fucker
-      (Just shipVAO) = sprites `spriteByName` "playerShip1_blue.png"
-      (Just projVAO) = sprites `spriteByName` "laserBlue05.png"
+      (Just shipVAOBlue) = sprites `spriteByName` "playerShip1_blue.png"
+      (Just shipVAORed) = sprites `spriteByName` "playerShip1_red.png"
+      (Just projVAOBlue) = sprites `spriteByName` "laserBlue05.png"
+      (Just projVAORed) = sprites `spriteByName` "laserRed05.png"
       (Just baseVAOBlue) = sprites `spriteByName` "ufoBlue.png"
       (Just baseVAORed) = sprites `spriteByName` "ufoRed.png"
       display ::
@@ -244,8 +246,18 @@ debugDisplay config gameStateRef program sprites = do
         -> s
         -> DisplayCallback
       display = displaySprite config program (fromIntegral w) (fromIntegral h)
-      displayEntity (EntityShip s) = display shipVAO s
-      displayEntity (EntityProjectile p) = display projVAO p
+      displayEntity (EntityShip s) =
+        let sVAO =
+              case s ^. team of
+                One -> shipVAOBlue
+                Two -> shipVAORed
+         in display sVAO s
+      displayEntity (EntityProjectile p) =
+        let pVAO =
+              case p ^. team of
+                One -> projVAOBlue
+                Two -> projVAORed
+         in display pVAO p
       displayEntity (EntityBase b) =
         let spVAO =
               case b ^. team of
@@ -275,7 +287,8 @@ displaySprite config program w h vao s
   -- we subtract pi/2 to the angle because
   -- of the sprite initial position in the texture
   uniformP "mModel" $
-    rotate2D (s ^. angle - pi / 2) $ translate2D (s ^. position) identity
+    rotate2D (s ^. angle - pi / 2) $
+    translate2D (s ^. position) $ scale2D 2 identity
   bindVertexArrayObject $= Just vao
   spriteDraw
   bindVertexArrayObject $= Nothing

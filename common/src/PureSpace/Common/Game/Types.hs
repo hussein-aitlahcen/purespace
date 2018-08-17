@@ -32,6 +32,8 @@ module PureSpace.Common.Game.Types
   , MaxHealth
   , Width
   , Height
+  , ShipAmount
+  , Cost
   , HasPlayerId(..)
   , HasObjectId(..)
   , HasTeam(..)
@@ -64,6 +66,10 @@ type ObjectId = Int64
 type PlayerId = ObjectId
 
 type Angle = Float
+
+type ShipAmount = Int
+
+type Cost = Int
 
 type Distance = Float
 

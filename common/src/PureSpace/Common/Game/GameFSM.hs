@@ -126,8 +126,7 @@ updatePlayers ::
 updatePlayers dt = do
   let playerBases p = filter ((== p ^. playerId) . view playerId) <$> getBases
       update p = (p &) . updatePlayer dt <$> playerBases p
-  players' <- traverse update =<< use players
-  players .= players'
+  use players >>= traverse update >>= assign players
 
 updatePlayer :: (HasCash a, HasIncome b) => DeltaTime -> [b] -> a -> a
 updatePlayer dt incomeSources =
@@ -141,9 +140,15 @@ updateEntities ::
   -> m ()
 updateEntities dt = do
   (entities', actions) <-
-    runWriterT $ traverse (updateEntity dt) =<< use entities
+    runWriterT $ use entities >>= traverse (updateEntity dt)
   entities'' <- foldrM executeGameAction entities' actions
   entities .= entities''
+
+checkCollisions ::
+     (MonadState s m, HasEntities s, HasSpatialGrid s)
+  => DeltaTime
+  -> m ()
+checkCollisions dt = pure ()
 
 executeGameAction ::
      (MonadState s m, HasNextObjectId s) => GameAction -> [Entity] -> m [Entity]
@@ -160,7 +165,7 @@ executeGameAction (ShotTarget a b) e = do
         EntityProjectile $
         Projectile caracteristics (a ^. team) origin dir phi nid pid
   pure $ newProj : e
-executeGameAction (SpawnFleet a b) e = do
+executeGameAction (SpawnShip a b) e = do
   nid <- use nextObjectId
   let sc = b ^. shipCaracteristics
       pid = a ^. playerId
@@ -221,7 +226,7 @@ updateShipObjective dt grid s =
          -> pure $ s & reduceFireCooldown . resetVelocity
         Just (EntityProjectile enemyProjectile)
          -- TODO: nothing yet
-         -> pure s
+         -> pure $ s & reduceFireCooldown . resetVelocity
         Nothing
         -- Rush to nearest enemy
          ->
@@ -231,7 +236,7 @@ updateShipObjective dt grid s =
                   maxV = s ^. maxVelocity
                   enemyPos = enemy ^. position
                   v = normalize (direction pos enemyPos) * maxV
-               in pure $ updateVelocity v s & reduceFireCooldown
+               in pure $ s & updateVelocity v . reduceFireCooldown
             Just (EntityBase enemyBase)
              -- TODO: fire
              -> pure $ s & reduceFireCooldown . resetVelocity
@@ -245,14 +250,16 @@ updateShipObjective dt grid s =
 -- TODO: drasically improve this, please
 updateBase :: GameActionWriter m => DeltaTime -> Base -> m Base
 updateBase dt b =
-  let canRespawnFleet = b ^. respawnCooldown <= 0
+  let canRespawnFleet x = x ^. respawnCooldown <= 0
       reduceSpawnCooldown = respawnCooldown -~ dt
-      -- TODO: extract that cooldown into the type Base
-      resetSpawnCooldown = respawnCooldown .~ 1
-   in if canRespawnFleet
-        then do
-          let fleets =
-                (^. fleetCompositions) =<< b ^. fleet . fleetCaracteristics
-          tell $ SpawnFleet b <$> fleets
-          pure $ b & resetSpawnCooldown
-        else pure $ b & reduceSpawnCooldown
+      resetSpawnCooldown x =
+        x & respawnCooldown .~ (x ^. fleetCaracteristics . respawnCooldown)
+      spawnFleet f =
+        let ships = SpawnShip b <$> f ^. fleetCaracteristics . fleetComposition
+         in if canRespawnFleet f
+              then do
+                tell ships
+                pure $ f & resetSpawnCooldown
+              else pure $ f & reduceSpawnCooldown
+   in do fleets' <- traverse spawnFleet $ b ^. fleets
+         pure $ b & fleets .~ fleets'

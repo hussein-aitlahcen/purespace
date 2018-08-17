@@ -16,9 +16,7 @@ module PureSpace.Common.Game.Fleet
   , Fleet(..)
   , FleetCaracteristics(..)
   , FleetComposition(..)
-  , ShipAmount
-  , Cost
-  , HasFleet(..)
+  , HasFleets(..)
   , HasCost(..)
   , HasFleetCaracteristics(..)
   , HasFleetCompositions(..)
@@ -26,17 +24,12 @@ module PureSpace.Common.Game.Fleet
   , HasShipAmount(..)
   ) where
 
-import Numeric.Natural
 import PureSpace.Common.Game.Ship
   ( HasShipCaracteristics(..)
   , ShipCaracteristics
   )
 import PureSpace.Common.Game.Types
 import PureSpace.Common.Lens (Lens', lens)
-
-type ShipAmount = Natural
-
-type Cost = Natural
 
 -- | Maybe this would be expressed more elegantly using a Map ?
 data FleetComposition =
@@ -50,27 +43,25 @@ data FleetCaracteristics =
                       Cost
   deriving (Eq, Ord, Show)
 
-newtype Fleet =
-  Fleet [FleetCaracteristics]
+data Fleet =
+  Fleet FleetCaracteristics
+        RespawnCooldown
   deriving (Eq, Ord, Show)
 
-class HasFleet h where
-  fleet :: Lens' h Fleet
+class HasFleets h where
+  fleets :: Lens' h [Fleet]
 
 class HasCost c where
   cost :: Lens' c Cost
 
 class HasFleetCaracteristics f where
-  fleetCaracteristics :: Lens' f [FleetCaracteristics]
+  fleetCaracteristics :: Lens' f FleetCaracteristics
 
 class HasShipAmount s where
   shipAmount :: Lens' s ShipAmount
 
 class HasFleetCompositions s where
-  fleetCompositions :: Lens' s [FleetComposition]
-
-instance HasFleet Fleet where
-  fleet = id
+  fleetComposition :: Lens' s [FleetComposition]
 
 instance HasCost FleetCaracteristics where
   cost =
@@ -86,12 +77,18 @@ instance HasRespawnCooldown FleetCaracteristics where
 
 instance HasFleetCaracteristics Fleet where
   fleetCaracteristics =
-    let f (Fleet a) = a
-        g _ = Fleet
+    let f (Fleet a _) = a
+        g (Fleet _ b) a = Fleet a b
+     in lens f g
+
+instance HasRespawnCooldown Fleet where
+  respawnCooldown =
+    let f (Fleet _ b) = b
+        g (Fleet a _) b = Fleet a b
      in lens f g
 
 instance HasFleetCompositions FleetCaracteristics where
-  fleetCompositions =
+  fleetComposition =
     let f (FleetCaracteristics a _ _) = a
         g (FleetCaracteristics _ b c) a = FleetCaracteristics a b c
      in lens f g

@@ -24,19 +24,16 @@ data GameAction where
     :: ( HasPosition t
        , HasTeam t
        , HasPlayerId t
-       , HasFireRate t
-       , HasFireCooldown t
        , HasProjectileCaracteristics t
        , HasPosition u
        )
     => t
     -> u
     -> GameAction
-  SpawnFleet
+  SpawnShip
     :: ( HasPosition t
        , HasTeam t
        , HasPlayerId t
-       , HasRespawnCooldown t
        , HasShipCaracteristics u
        )
     => t

@@ -20,6 +20,9 @@ module PureSpace.Common.Game.Base
   , HasIsHeadquarter(..)
   , HasBase(..)
   , HasBaseType(..)
+  , HasPossibleFleets(..)
+  , PossibleFleets
+  , Fleets
   , Income
   , IsHeadquarter
   ) where
@@ -35,6 +38,10 @@ type Income = Integer
 -- a player has lost.
 type IsHeadquarter = Bool
 
+type PossibleFleets = [FleetCaracteristics]
+
+type Fleets = [Fleet]
+
 -- | Base of a player, providers of income and potentially
 -- main target of an opponent
 data Base =
@@ -44,10 +51,10 @@ data Base =
        Health
        Position
        Angle
-       Fleet
+       Fleets
        ObjectId
        PlayerId
-       RespawnCooldown
+       PossibleFleets
   deriving (Eq, Ord, Show)
 
 data BaseCaracteristics =
@@ -68,6 +75,9 @@ class HasIncome i where
 
 class HasIsHeadquarter i where
   isHeadquarter :: Lens' i IsHeadquarter
+
+class HasPossibleFleets s where
+  possibleFleets :: Lens' s PossibleFleets
 
 instance HasBase Base where
   base = id
@@ -108,8 +118,8 @@ instance HasAngle Base where
         g (Base a b c d e _ l m o p) k = Base a b c d e k l m o p
      in lens f g
 
-instance HasFleet Base where
-  fleet =
+instance HasFleets Base where
+  fleets =
     let f (Base _ _ _ _ _ _ l _ _ _) = l
         g (Base a b c d e k _ m o p) l = Base a b c d e k l m o p
      in lens f g
@@ -126,8 +136,8 @@ instance HasPlayerId Base where
         g (Base a b c d e k l m _ p) o = Base a b c d e k l m o p
      in lens f g
 
-instance HasRespawnCooldown Base where
-  respawnCooldown =
+instance HasPossibleFleets Base where
+  possibleFleets =
     let f (Base _ _ _ _ _ _ _ _ _ p) = p
         g (Base a b c d e k l m o _) p = Base a b c d e k l m o p
      in lens f g
